@@ -1,0 +1,381 @@
+<!doctype html>
+<title>v6 스토리보드 초안 · 카마스터</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #EEF0F2; --surface: #FFFFFF; --surface-2: #F5F6F8; --ink: #171B1F; --ink-muted: #5B6470;
+    --line: #D7DBDF; --line-strong: #C2C8CD; --accent: #C1602A; --accent-ink: #7A3814; --accent-soft: #F3E2D6;
+    --shadow: 0 1px 2px rgba(23,27,31,0.04), 0 8px 24px -12px rgba(23,27,31,0.18);
+    --role-customer: #3B6EA5; --role-karmaster: #4B7A3D; --role-shop: #8A5A2B; --role-driver: #6C5B9C; --role-admin: #5B6470;
+    --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    --font-mono: "SF Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+    --app-primary: #185fa5; --app-header: #171717; --app-bg: #eceae4; --app-card: #faf9f5;
+    --app-badge-info-bg: #e6f1fb; --app-badge-info-ink: #0c447c;
+    --app-badge-wait-bg: #faeeda; --app-badge-wait-ink: #854f0b;
+    --app-badge-done-bg: #eaf3de; --app-badge-done-ink: #3b6d11;
+    --app-badge-warn-bg: #fbeae8; --app-badge-warn-ink: #b4362e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171B; --surface: #1C2126; --surface-2: #20262C; --ink: #ECEEF0; --ink-muted: #9AA3AC;
+      --line: #2C333A; --line-strong: #394149; --accent: #E08A4F; --accent-ink: #F3C7A2; --accent-soft: #3A2A20;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.55);
+      --role-customer: #6FA0D8; --role-karmaster: #7FB565; --role-shop: #C08A50; --role-driver: #A695D6; --role-admin: #8B96A3;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171B; --surface: #1C2126; --surface-2: #20262C; --ink: #ECEEF0; --ink-muted: #9AA3AC;
+    --line: #2C333A; --line-strong: #394149; --accent: #E08A4F; --accent-ink: #F3C7A2; --accent-soft: #3A2A20;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 28px -14px rgba(0,0,0,0.55);
+    --role-customer: #6FA0D8; --role-karmaster: #7FB565; --role-shop: #C08A50; --role-driver: #A695D6; --role-admin: #8B96A3;
+  }
+  :root[data-theme="light"] {
+    --bg: #EEF0F2; --surface: #FFFFFF; --surface-2: #F5F6F8; --ink: #171B1F; --ink-muted: #5B6470;
+    --line: #D7DBDF; --line-strong: #C2C8CD; --accent: #C1602A; --accent-ink: #7A3814; --accent-soft: #F3E2D6;
+    --shadow: 0 1px 2px rgba(23,27,31,0.04), 0 8px 24px -12px rgba(23,27,31,0.18);
+    --role-customer: #3B6EA5; --role-karmaster: #4B7A3D; --role-shop: #8A5A2B; --role-driver: #6C5B9C; --role-admin: #5B6470;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+
+  .masthead { padding: 48px 24px 28px; max-width: 1080px; margin: 0 auto; }
+  .masthead .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-ink); background: var(--accent-soft); display: inline-block; padding: 4px 10px; border-radius: 5px; margin-bottom: 14px; }
+  .masthead h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.01em; }
+  .masthead p { color: var(--ink-muted); font-size: 14.5px; max-width: 68ch; margin: 12px 0 0; }
+  .masthead .note { font-size: 13px; color: var(--accent-ink); background: var(--accent-soft); border-radius: 8px; padding: 10px 14px; margin-top: 16px; max-width: 68ch; }
+
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-inner {
+    max-width: 1080px; margin: 0 auto; padding: 10px 24px;
+    display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  }
+  .nav-inner::-webkit-scrollbar { display: none; }
+  .nav-chip {
+    font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-muted);
+    text-decoration: none; white-space: nowrap; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); flex: none;
+  }
+  .nav-chip:hover { color: var(--ink); border-color: var(--line-strong); }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 8px 24px 80px; }
+
+  .phase { margin-top: 52px; }
+  .phase:first-child { margin-top: 28px; }
+  .phase-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid var(--line-strong); }
+  .phase-tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.1em; color: var(--accent-ink); }
+  .phase-head h2 { font-size: 20px; font-weight: 800; }
+  .phase-note { color: var(--ink-muted); font-size: 13px; margin: -8px 0 20px; max-width: 68ch; }
+
+  .stop { display: grid; grid-template-columns: 40px 1fr; gap: 0 18px; position: relative; }
+  .stop-rail { position: relative; display: flex; justify-content: center; }
+  .stop-rail::before { content: ""; position: absolute; top: 0; bottom: -28px; left: 50%; width: 2px; background: var(--line-strong); transform: translateX(-50%); }
+  .stop:last-child .stop-rail::before { bottom: 50%; }
+  .stop-node { position: relative; z-index: 1; width: 40px; height: 40px; border-radius: 50%; background: var(--surface); border: 2px solid var(--line-strong); display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 700; font-size: 13px; color: var(--ink-muted); margin-top: 4px; }
+  .stop-node.role-customer { border-color: var(--role-customer); color: var(--role-customer); }
+  .stop-node.role-karmaster { border-color: var(--role-karmaster); color: var(--role-karmaster); }
+  .stop-node.role-shop { border-color: var(--role-shop); color: var(--role-shop); }
+  .stop-node.role-driver { border-color: var(--role-driver); color: var(--role-driver); }
+  .stop-node.role-admin { border-color: var(--role-admin); color: var(--role-admin); }
+
+  .stop-card { padding-bottom: 28px; }
+  .stop-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .stop-head h3 { font-size: 16px; font-weight: 700; }
+  .role-chip { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; padding: 3px 9px; border-radius: 999px; color: #fff; }
+  .role-chip.role-customer { background: var(--role-customer); }
+  .role-chip.role-karmaster { background: var(--role-karmaster); }
+  .role-chip.role-shop { background: var(--role-shop); }
+  .role-chip.role-driver { background: var(--role-driver); }
+  .role-chip.role-admin { background: var(--role-admin); }
+  .stop-note { color: var(--ink-muted); font-size: 13.5px; max-width: 62ch; margin: 0 0 14px; }
+
+  .frame { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); max-width: 460px; }
+  .frame-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+  .dots { display: flex; gap: 5px; }
+  .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); display: block; }
+  .frame-path { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); }
+
+  .mock { background: var(--app-bg); padding: 14px; font-size: 10.5px; color: #171717; }
+  .mock-card { background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
+  .mock-card:last-child { margin-bottom: 0; }
+  .mock-h { font-size: 12px; font-weight: 800; margin: 0 0 6px; }
+  .mock-sub { color: #777; font-size: 9.5px; margin: 0 0 8px; line-height: 1.5; }
+  .mock-badge { display: inline-block; font-size: 8.5px; padding: 2px 7px; border-radius: 10px; font-weight: 700; margin-bottom: 6px; }
+  .mock-badge.info { background: var(--app-badge-info-bg); color: var(--app-badge-info-ink); }
+  .mock-badge.wait { background: var(--app-badge-wait-bg); color: var(--app-badge-wait-ink); }
+  .mock-badge.done { background: var(--app-badge-done-bg); color: var(--app-badge-done-ink); }
+  .mock-badge.warn { background: var(--app-badge-warn-bg); color: var(--app-badge-warn-ink); }
+  .mock-input { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 5px 8px; font-size: 9.5px; color: #999; margin-bottom: 6px; }
+  .mock-input b { color: #171717; font-weight: 600; }
+  .mock-row { display: flex; gap: 6px; margin-bottom: 6px; }
+  .mock-row .mock-input { flex: 1; margin-bottom: 0; }
+  .mock-btn { display: inline-block; text-align: center; border-radius: 5px; padding: 6px 10px; font-size: 9.5px; font-weight: 700; }
+  .mock-btn.primary { background: var(--app-primary); color: #fff; }
+  .mock-btn.outline { background: #fff; border: 1px solid #999; color: #171717; }
+  .mock-btn.block { display: block; width: 100%; margin-top: 4px; }
+  .mock-btn.disabled { background: #ddd; color: #999; }
+  .mock-msg { background: #f7f6f2; border-radius: 6px; padding: 8px 10px; font-size: 9.5px; line-height: 1.7; color: #333; }
+  .mock-tag { display: inline-block; font-size: 8px; background: #f1efe8; padding: 2px 6px; border-radius: 5px; margin-right: 3px; color: #555; }
+  .mock-hr { border: none; border-top: 1px dashed #ddd; margin: 8px 0; }
+  .mock-list-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 9.5px; }
+  .mock-list-item:last-child { border-bottom: none; }
+  .mock-dim { color: #999; }
+  .mock-flow { display: flex; align-items: center; gap: 3px; margin-bottom: 8px; }
+  .mock-flow-step { flex: 1; text-align: center; font-size: 8px; padding: 4px 2px; border-radius: 4px; background: #f1efe8; color: #999; }
+  .mock-flow-step.on { background: var(--app-primary); color: #fff; font-weight: 700; }
+  .mock-flow-step.done { background: var(--app-badge-done-bg); color: var(--app-badge-done-ink); }
+  .mock-kcard { border: 1px solid #ddd; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; }
+  .mock-kcard:last-child { margin-bottom: 0; }
+  .mock-select { background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 5px 8px; font-size: 9.5px; color: #999; margin-bottom: 6px; display:flex; justify-content:space-between; }
+
+  footer { max-width: 1080px; margin: 0 auto; padding: 20px 24px 60px; color: var(--ink-muted); font-size: 12.5px; font-family: var(--font-mono); }
+</style>
+
+<div class="nav">
+  <div class="nav-inner">
+    <a class="nav-chip" href="#phase-login-km">로그인</a>
+    <a class="nav-chip" href="#phase-delivery-km">신차인도서비스</a>
+  </div>
+</div>
+
+<div class="masthead">
+  <span class="eyebrow">Draft — 카마스터 화면만</span>
+  <h1>v6 스토리보드 초안 (2/5): 카마스터</h1>
+  <p>카마스터의 역할은 "고객이 등록한 계약을 검토·승인"부터 "출고 요청·배송 모니터링"까지이며, 오너가 차량 수령을 확인하는 순간 끝난다. 신차 케어 서비스(시공)는 이후 진행되지만 카마스터는 관여하지 않는다.</p>
+  <p class="note">이 파일도 검토용 초안입니다. 시공업체·배송기사·관리자는 다음 단계에서 추가합니다.</p>
+</div>
+
+<main>
+  <section class="phase" id="phase-login-km">
+    <div class="phase-head"><span class="phase-tag">PHASE 0</span><h2>로그인</h2></div>
+
+    <div class="stop">
+      <div class="stop-rail"><div class="stop-node role-karmaster"><span>1</span></div></div>
+      <div class="stop-card">
+        <div class="stop-head"><span class="role-chip role-karmaster">카마스터</span><h3>로그인 — 연락처 입력</h3></div>
+        <p class="stop-note">실제 서비스와 같은 모양으로, 등록된 연락처를 입력해 로그인한다. 계정 카드를 늘어놓고 고르던 이전 방식은 테스트 편의만을 위한 별도 드롭다운("테스트 계정으로 빠른 로그인")으로 옮겼다 — 평소엔 접혀 있다.</p>
+        <figure class="frame">
+          <figcaption class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="frame-path">karmaster.html</span></figcaption>
+          <div class="mock">
+            <div class="mock-card" style="text-align:center;">
+              <div class="mock-h">카마스터 로그인</div>
+              <div class="mock-sub">등록된 연락처로 로그인합니다.</div>
+              <div class="mock-input">010-1234-5678</div>
+              <div class="mock-btn primary block">로그인</div>
+              <div class="mock-btn outline block">아직 계정이 없으신가요? 조회번호로 첫 계약 등록하기</div>
+              <div class="mock-hr"></div>
+              <div class="mock-sub" style="text-align:left;">테스트 계정으로 빠른 로그인</div>
+              <div class="mock-select"><span>계정 선택…</span><span>▾</span></div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="phase" id="phase-delivery-km">
+    <div class="phase-head"><span class="phase-tag">PHASE 1</span><h2>신차인도서비스 — 카마스터 파트</h2></div>
+    <p class="phase-note">코드를 입력받는 절차 없이, 고객이 등록한 내용을 직접 눈으로 대조해 승인한다.</p>
+
+    <div class="stop">
+      <div class="stop-rail"><div class="stop-node role-karmaster"><span>2</span></div></div>
+      <div class="stop-card">
+        <div class="stop-head"><span class="role-chip role-karmaster">카마스터</span><h3>담당 고객 목록</h3></div>
+        <p class="stop-note">신규 승인 필요 건이 목록 위에 배지로 뜬다. 계약이 여러 건이면 계약번호·이름·연락처로 실시간 검색할 수 있다.</p>
+        <figure class="frame">
+          <figcaption class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="frame-path">karmaster.html#dashboard</span></figcaption>
+          <div class="mock">
+            <div class="mock-input">계약번호·고객이름·연락처로 검색</div>
+            <div class="mock-list-item"><span>홍길동 <span class="mock-dim">10-202608-0001</span></span><span class="mock-badge wait" style="margin:0;">🔔 신규</span></div>
+            <div class="mock-list-item"><span>이관심 <span class="mock-dim">10-202608-0000</span></span><span class="mock-dim">③ 출고 가능</span></div>
+          </div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="stop">
+      <div class="stop-rail"><div class="stop-node role-karmaster"><span>3</span></div></div>
+      <div class="stop-card">
+        <div class="stop-head"><span class="role-chip role-karmaster">카마스터</span><h3>검토 및 승인</h3></div>
+        <p class="stop-note">화면에 뜬 차량정보·계약일자·고객정보가 실제로 체결한 계약과 맞는지 확인하고 승인한다. 출고 후 시공예정 여부·상담 메모는 이때 입력하고, "시공 필요"인 경우 <b>지정업체명(선택)</b>도 함께 남길 수 있다 — 이건 카마스터와 그 업체 사이의 별개 거래일 뿐이라 고객에게는 절대 노출되지 않는다.</p>
+        <figure class="frame">
+          <figcaption class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="frame-path">karmaster.html#dashboard</span></figcaption>
+          <div class="mock">
+            <div class="mock-card">
+              <div class="mock-h">고객이 등록한 계약 내용</div>
+              <div class="mock-msg">차량: <b>쏘렌토 하이브리드</b> · 시그니처<br>계약일자: 2026-08-01<br>고객: 홍길동 · 010-1111-2222</div>
+              <div class="mock-sub" style="margin-top:6px;">출고 후 시공예정 여부</div>
+              <div class="mock-row"><div class="mock-btn primary" style="flex:1;">시공 필요</div><div class="mock-btn outline" style="flex:1;">시공 불필요</div></div>
+              <div class="mock-sub" style="margin-top:6px;">지정업체명 (선택 — 고객 비노출)</div>
+              <div class="mock-input">예: 울산오토라운지</div>
+              <div class="mock-btn primary block">승인</div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="stop">
+      <div class="stop-rail"><div class="stop-node role-karmaster"><span>4</span></div></div>
+      <div class="stop-card">
+        <div class="stop-head"><span class="role-chip role-karmaster">카마스터</span><h3>미등록 카마스터 — 조회번호로 동시 가입·승인</h3></div>
+        <p class="stop-note">고객에게 오프라인으로 전달받은 조회번호를 입력하면 같은 계약 내용이 뜬다. 이름·지역만 추가로 입력하면 가입과 승인이 한 번에 끝난다.</p>
+        <figure class="frame">
+          <figcaption class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="frame-path">karmaster.html#onboard</span></figcaption>
+          <div class="mock">
+            <div class="mock-card">
+              <div class="mock-input"><b>912778</b></div>
+              <div class="mock-badge info">요청을 찾았습니다</div>
+              <div class="mock-msg">차량: <b>카니발 하이브리드</b><br>고객: 신규개척 · 010-4444-5555</div>
+              <div class="mock-row"><div class="mock-input">본인 이름</div><div class="mock-input">활동 지역</div></div>
+              <div class="mock-btn primary block">가입하고 승인 완료</div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="stop">
+      <div class="stop-rail"><div class="stop-node role-karmaster"><span>5</span></div></div>
+      <div class="stop-card">
+        <div class="stop-head"><span class="role-chip role-karmaster">카마스터</span><h3>출고 요청 대기중</h3></div>
+        <p class="stop-note">계약이 확정됐다고 곧바로 출고가 시작되지 않는다. 고객이 먼저 최종 수령지와 함께 출고를 요청해야 여기서 공장에 출고를 의뢰할 수 있다 — 신차 케어 서비스 진행 상태와는 무관하다(그건 고객-시공사 간의 완전히 별개 계약이다).</p>
+        <figure class="frame">
+          <figcaption class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="frame-path">karmaster.html#dashboard</span></figcaption>
+          <div class="mock">
+            <div class="mock-card">
+              <div class="mock-h">출고 요청 대기중</div>
+              <div class="mock-sub">고객이 아직 출고를 요청하지 않았습니다. 고객이 최종 수령지를 정해 "차량 출고 요청하기"를 누르면 여기서 공장에 출고를 의뢰할 수 있습니다.</div>
+              <div class="mock-btn disabled block">공장에 출고 의뢰하기 (비활성)</div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="stop">
+      <div class="stop-rail"><div class="stop-node role-karmaster"><span>6</span></div></div>
+      <div class="stop-card">
+        <div class="stop-head"><span class="role-chip role-karmaster">카마스터</span><h3>공장에 출고 의뢰</h3></div>
+        <p class="stop-note">고객이 출고를 요청하면(최종 수령지 포함) 버튼이 활성화된다. 이 액션 자체가 "언제 출고를 의뢰했는지" 이력이 된다.</p>
+        <figure class="frame">
+          <figcaption class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="frame-path">karmaster.html#dashboard</span></figcaption>
+          <div class="mock">
+            <div class="mock-card">
+              <div class="mock-sub">고객이 출고를 요청했습니다 — 최종 수령지: 울산광역시 남구 자택. 공장에 출고를 의뢰하면 배송기사가 배정됩니다.</div>
+              <div class="mock-btn primary block">공장에 출고 의뢰하기 →</div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="stop">
+      <div class="stop-rail"><div class="stop-node role-karmaster"><span>7</span></div></div>
+      <div class="stop-card">
+        <div class="stop-head"><span class="role-chip role-karmaster">카마스터</span><h3>배송 모니터링 — 1차 구간 (시공예정 건만)</h3></div>
+        <p class="stop-note">"출고 후 시공예정"이 필요인 계약은 최종 목적지 전에 지정업체를 먼저 들른다. 카마스터 화면에는 목적지가 지정업체명으로 그대로 보인다(고객 화면에는 이 상세가 노출되지 않는다). 시공예정이 없는 계약은 이 구간 없이 곧장 최종 목적지로 간다(stop 9와 동일).</p>
+        <figure class="frame">
+          <figcaption class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="frame-path">karmaster.html#dashboard</span></figcaption>
+          <div class="mock">
+            <div class="mock-card">
+              <div class="mock-sub">목적지: 울산오토라운지 · 배송기사: 최기사</div>
+              <div class="mock-flow">
+                <div class="mock-flow-step done">출발</div>
+                <div class="mock-flow-step on">고속도로</div>
+                <div class="mock-flow-step">인근도착</div>
+                <div class="mock-flow-step">도착</div>
+              </div>
+              <div class="mock-btn outline block">즉시 도착 처리</div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="stop">
+      <div class="stop-rail"><div class="stop-node role-karmaster"><span>8</span></div></div>
+      <div class="stop-card">
+        <div class="stop-head"><span class="role-chip role-karmaster">카마스터</span><h3>지정업체에서 작업 중 — 시공완료 확인</h3></div>
+        <p class="stop-note">1차 구간 도착 시점부터는 오프라인으로 업체와 직접 소통해 시공완료를 확인하는 게 카마스터의 몫이다 — 앱은 이 소통 자체를 중개하지 않는다. 확인 버튼을 누르면 최종 목적지로의 재배송이 곧바로 시작된다.</p>
+        <figure class="frame">
+          <figcaption class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="frame-path">karmaster.html#dashboard</span></figcaption>
+          <div class="mock">
+            <div class="mock-card">
+              <div class="mock-h">지정업체에서 작업 중</div>
+              <div class="mock-msg">차량이 울산오토라운지에 도착했습니다. 업체와 직접 소통해 시공완료를 확인한 뒤 아래 버튼으로 재배송을 시작해 주세요 — 고객에게는 이 진행상황이 어느 업체인지 노출되지 않습니다.</div>
+              <div class="mock-btn primary block">시공완료 확인 →</div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="stop">
+      <div class="stop-rail"><div class="stop-node role-karmaster"><span>9</span></div></div>
+      <div class="stop-card">
+        <div class="stop-head"><span class="role-chip role-karmaster">카마스터</span><h3>배송 모니터링 — 최종 목적지 구간</h3></div>
+        <p class="stop-note">1차 구간이 없는 계약(시공예정 불필요)은 여기부터 시작한다. 목적지는 고객이 정한 최종 수령지 그대로다.</p>
+        <figure class="frame">
+          <figcaption class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="frame-path">karmaster.html#dashboard</span></figcaption>
+          <div class="mock">
+            <div class="mock-card">
+              <div class="mock-sub">목적지: 울산광역시 남구 자택 · 배송기사: 최기사</div>
+              <div class="mock-flow">
+                <div class="mock-flow-step done">출발</div>
+                <div class="mock-flow-step on">고속도로</div>
+                <div class="mock-flow-step">인근도착</div>
+                <div class="mock-flow-step">도착</div>
+              </div>
+              <div class="mock-btn outline block">즉시 도착 처리</div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="stop">
+      <div class="stop-rail"><div class="stop-node role-karmaster"><span>10</span></div></div>
+      <div class="stop-card">
+        <div class="stop-head"><span class="role-chip role-karmaster">카마스터</span><h3>신차인도서비스 완료 — 역할 종료</h3></div>
+        <p class="stop-note">오너가 차량 수령을 확인하는 순간 카마스터의 역할이 끝난다. 시공예정이 있었더라도 이미 앞선 구간에서 끝난 일이라, 완료 문구에 별도로 언급하지 않는다. 메시지 응대 채널은 계속 열려 있다.</p>
+        <figure class="frame">
+          <figcaption class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="frame-path">karmaster.html#dashboard</span></figcaption>
+          <div class="mock">
+            <div class="mock-card">
+              <div class="mock-h">신차인도서비스 완료</div>
+              <div class="mock-msg">오너가 차량 수령을 확인했습니다. 이 건에 대한 카마스터의 역할은 여기서 끝납니다.</div>
+              <div class="mock-badge wait">고객 평가 대기중</div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+
+    <div class="stop">
+      <div class="stop-rail"><div class="stop-node role-karmaster"><span>11</span></div></div>
+      <div class="stop-card">
+        <div class="stop-head"><span class="role-chip role-karmaster">카마스터</span><h3>메시지 응대 — 역할 종료 후에도 유지</h3></div>
+        <p class="stop-note">신차인도서비스가 끝난 뒤에도 고객이 보낸 메시지는 계속 받을 수 있다 — 계약~수령 전 구간에서 오너와 직접 소통할 수 있는 유일한 채널이다.</p>
+        <figure class="frame">
+          <figcaption class="frame-bar"><span class="dots"><i></i><i></i><i></i></span><span class="frame-path">karmaster.html#dashboard</span></figcaption>
+          <div class="mock">
+            <div class="mock-card">
+              <div class="mock-msg">홍길동 · 방금 전<br>"수령 잘 했습니다, 감사합니다!"</div>
+              <div class="mock-input">답장을 입력하세요</div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>카마스터 화면 11단계 초안 · draft 2/5</footer>
