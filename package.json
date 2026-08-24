@@ -1,0 +1,15 @@
+{
+  "name": "auto-lifecycle-platform-mvp-v5",
+  "version": "0.5.0",
+  "private": true,
+  "description": "자동차 구매-출고-시공-수령 통합 MVP 프로토타입 (v5)",
+  "scripts": {
+    "serve": "http-server -p 8000 -c-1",
+    "test": "node tests/run-all.js",
+    "playwright:install": "playwright install chromium"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "playwright": "^1.62.1"
+  }
+}
