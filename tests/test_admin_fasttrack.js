@@ -12,8 +12,9 @@ const { chromium } = require('playwright');
   try {
     const admin = await context.newPage(); track(admin, 'admin');
 
-    await admin.goto('http://localhost:8000/admin.html');
-    await admin.click('.km-card >> nth=0');
+    await admin.goto('http://localhost:8000/supervisor.html');
+    await admin.waitForSelector('#quick-login', { timeout: 3000 });
+    await admin.selectOption('#quick-login', 'admin_super'); // 슈퍼바이저로 로그인 (전체 권한, 그룹 스코프 제한 없음)
 
     // ===== 1부: 신차인도서비스 — 등록부터 인도완료·평가까지 전 과정을 관리자 단독으로 대리 처리 =====
     await admin.click('text=+ 계약 대리 등록');
@@ -21,9 +22,11 @@ const { chromium } = require('playwright');
     await admin.fill('#a-nc-name', '박관리');
     await admin.fill('#a-nc-phone', '01055556666');
     await admin.fill('#a-nc-car', '테슬라 모델Y');
-    await admin.click('#a-nc-need-y');
+    await admin.selectOption('#a-nc-brand', '기타');
+    await admin.fill('#a-nc-contract-no', 'HD-2026-9001');
+    await admin.click('#a-nc-dest-AFFILIATED_SHOP');
     await admin.click('#a-nc-submit');
-    console.log('1) 관리자: 계약 대리 등록 (시공 필요)');
+    console.log('1) 관리자: 계약 대리 등록 (제휴 시공소 경유)');
 
     await admin.waitForSelector('text=고객 확인 대리 처리 →', { timeout: 3000 });
     await admin.click('text=고객 확인 대리 처리 →');
@@ -52,9 +55,9 @@ const { chromium } = require('playwright');
     await admin.click('text=즉시 도착 처리');
     console.log('5-2) 관리자: 배송 즉시 도착 처리 (2차 구간 — 최종 목적지)');
 
-    await admin.waitForSelector('text=수령 확인 대리 처리', { timeout: 3000 });
-    await admin.click('text=수령 확인 대리 처리');
-    console.log('6) 관리자: 수령 확인 대리 처리 → 카마스터 역할 종료, 신차인도서비스 완료');
+    await admin.waitForSelector('text=개인수령확인+수령 확인 대리 처리 (양쪽 모두)', { timeout: 3000 });
+    await admin.click('text=개인수령확인+수령 확인 대리 처리 (양쪽 모두)');
+    console.log('6) 관리자: 개인수령확인+수령 확인 대리 처리 → 카마스터 역할 종료, 신차인도서비스 완료');
 
     await admin.waitForSelector('text=카마스터 평가 대리 제출', { timeout: 3000 });
     await admin.click('text=카마스터 평가 대리 제출');

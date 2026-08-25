@@ -20,6 +20,8 @@ const { chromium } = require('playwright');
     await customer.waitForSelector('#rq-km-phone', { timeout: 3000 });
     await customer.fill('#rq-km-phone', '01022223301'); // 김도현 카마스터 연락처
     await customer.fill('#rq-car', '팰리세이드');
+    await customer.selectOption('#rq-brand', '현대');
+    await customer.fill('#rq-contract-no', 'HD-2026-4001');
     await customer.fill('#rq-trim', '캘리그래피');
     await customer.fill('#rq-color', '어비스 블랙');
     await customer.fill('#rq-date', '2026-08-01');
@@ -38,7 +40,7 @@ const { chromium } = require('playwright');
     const reviewText = await karmaster.locator('.admin-controls').first().innerText();
     console.log('2) 카마스터 검토 화면에 표시된 내용:\n' + reviewText);
 
-    await karmaster.click('button[id^="km-need-y-"]');
+    await karmaster.click('button[id^="km-dest-AFFILIATED_SHOP-"]');
     await karmaster.fill('textarea[id^="km-memo-"]', '패밀리카로 고민중이라 3열 공간 위주로 상담함');
     await karmaster.click('button[id^="km-fill-submit-"]');
     await karmaster.waitForSelector('text=고객 확인 대기중', { timeout: 3000 });

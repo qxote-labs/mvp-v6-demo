@@ -18,6 +18,8 @@ const { chromium } = require('playwright');
     await customer.waitForSelector('#rq-km-phone', { timeout: 3000 });
     await customer.fill('#rq-km-phone', '01022223301'); // 김도현 카마스터 연락처
     await customer.fill('#rq-car', '아반떼');
+    await customer.selectOption('#rq-brand', '현대');
+    await customer.fill('#rq-contract-no', 'HD-2026-2001');
     await customer.fill('#rq-date', '2026-08-01');
     await customer.fill('#rq-name', '메시지테스트');
     await customer.fill('#rq-phone', '01099990000');

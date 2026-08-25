@@ -21,6 +21,8 @@ const { chromium } = require('playwright');
     await customer.waitForSelector('#rq-km-phone', { timeout: 3000 });
     await customer.fill('#rq-km-phone', '01022223301'); // 김도현 카마스터 연락처
     await customer.fill('#rq-car', '스포티지');
+    await customer.selectOption('#rq-brand', '기아');
+    await customer.fill('#rq-contract-no', 'KIA-2026-5001');
     await customer.fill('#rq-date', '2026-08-01');
     await customer.fill('#rq-name', '모니터고객');
     await customer.fill('#rq-phone', '01099998888');
@@ -34,7 +36,7 @@ const { chromium } = require('playwright');
     await karmaster.waitForSelector('table tr.clickable', { timeout: 3000 });
     await karmaster.click('table tr.clickable >> nth=0');
     await karmaster.waitForSelector('text=고객이 등록한 계약 내용', { timeout: 3000 });
-    await karmaster.click('button[id^="km-need-n-"]'); // 애프터마켓 없이 순수 인도만
+    await karmaster.click('button[id^="km-dest-DEALERSHIP-"]'); // 애프터마켓 없이 순수 인도만
     await karmaster.click('button[id^="km-fill-submit-"]');
     await karmaster.waitForSelector('text=고객 확인 대기중', { timeout: 3000 });
 
@@ -55,9 +57,21 @@ const { chromium } = require('playwright');
     await driver.waitForSelector('.dstepper', { timeout: 3000 });
     await driver.click('button[id^="arrive-"]');
 
-    await customer.waitForSelector('text=차량 수령 확인하기', { timeout: 3000 });
-    await customer.click('text=차량 수령 확인하기');
-    console.log('2) 고객: 수령 확인 → 신차인도서비스 완료, 카마스터 역할 종료');
+    await karmaster.waitForSelector('text=개인수령확인 처리', { timeout: 3000 });
+    await karmaster.click('text=개인수령확인 처리');
+    console.log('1-1) 카마스터: 개인수령확인 처리 (DELIVERED → CONFIRMED 전환 조건 중 카마스터 측)');
+
+    await customer.waitForSelector('#insp-ok', { timeout: 3000 });
+    await customer.click('#insp-ok');
+    const sigBox1 = await customer.locator('#insp-sig').boundingBox();
+    await customer.mouse.move(sigBox1.x + 20, sigBox1.y + 20);
+    await customer.mouse.down();
+    await customer.mouse.move(sigBox1.x + 100, sigBox1.y + 60);
+    await customer.mouse.move(sigBox1.x + 180, sigBox1.y + 30);
+    await customer.mouse.up();
+    await customer.waitForSelector('#insp-submit:not([disabled])', { timeout: 3000 });
+    await customer.click('#insp-submit');
+    console.log('2) 고객: 검수(이상없음)+전자서명 후 인수 확인 → 신차인도서비스 완료, 카마스터 역할 종료');
 
     await karmaster.waitForSelector('text=신차인도서비스 완료', { timeout: 3000 });
     const journeyText = await karmaster.locator('#section-journey').innerText();

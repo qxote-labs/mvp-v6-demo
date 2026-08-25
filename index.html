@@ -8,14 +8,18 @@
 <body>
 <div class="app" style="max-width:760px;">
   <div style="text-align:center;margin:40px 0;">
-    <h2 style="font-size:26px;">자동차 구매 상담 - 출고 - 시공 - 수령 통합 MVP (v5)</h2>
+    <h2 style="font-size:26px;">자동차 구매 상담 - 출고 - 시공 - 수령 통합 MVP (v6)</h2>
     <div class="sub">5개 역할 화면을 각각 새 창으로 열어 동시에 테스트해 보세요</div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-    <a href="customer.html" target="_blank" class="frame" style="padding:24px;text-decoration:none;color:inherit;display:block;">
-      <div style="font-weight:800;font-size:16px;margin-bottom:6px;">🚘 구매자 화면</div>
+  <!-- 우리 서비스의 주 고객은 구매자다 — 구매자 화면을 단독 1줄로 강조하고, 카마스터·시공업체는
+       구매자를 지원하는 파트너/제공자로서 그 아래 대등하게 배치한다. -->
+  <div style="display:grid;grid-template-columns:1fr;gap:16px;">
+    <a href="customer.html" target="_blank" class="frame" style="padding:32px 24px;text-decoration:none;color:inherit;display:block;border-width:2px;">
+      <div style="font-weight:800;font-size:19px;margin-bottom:6px;">🚘 구매자 화면</div>
       <div class="sub" style="margin-bottom:0;">상담 예약 → 계약 → 실시간 배송 확인 → 수령</div>
     </a>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px;">
     <a href="karmaster.html" target="_blank" class="frame" style="padding:24px;text-decoration:none;color:inherit;display:block;">
       <div style="font-weight:800;font-size:16px;margin-bottom:6px;">👥 카마스터 화면</div>
       <div class="sub" style="margin-bottom:0;">상담 완료 처리, 수령 확인</div>
@@ -24,14 +28,20 @@
       <div style="font-weight:800;font-size:16px;margin-bottom:6px;">🔧 시공업체 화면</div>
       <div class="sub" style="margin-bottom:0;">입고 → 작업 → 최종검수 → 출차 → 재배송 시작</div>
     </a>
-    <a href="driver.html" target="_blank" class="frame" style="padding:24px;text-decoration:none;color:inherit;display:block;">
-      <div style="font-weight:800;font-size:16px;margin-bottom:6px;">🚚 배송기사 화면</div>
-      <div class="sub" style="margin-bottom:0;">실시간 배송 진행(자동) · 즉시 도착 처리</div>
-    </a>
-    <a href="admin.html" target="_blank" class="frame" style="padding:24px;text-decoration:none;color:inherit;display:block;grid-column:1 / -1;">
-      <div style="font-weight:800;font-size:16px;margin-bottom:6px;">⚙ 관리자 총괄 화면</div>
-      <div class="sub" style="margin-bottom:0;">전체 현황 조회 + 모든 단계 대리 처리 (데모 신속 진행용)</div>
-    </a>
+  </div>
+  <!-- user-account-role-model-spec.md 1.6/4.4절: 배송기사는 메뉴 자체를 숨기고(위탁 탁송사가 앱을
+       상시 쓸 유인이 낮다는 판단), 관리자는 셀프 온보딩 대상이 아니라 시작 화면 카드에 아예 올리지
+       않는다 — 기능은 그대로 유지하되(URL로는 계속 접근 가능) 일반 사용자 진입 흐름에서만 뺀 것이다.
+       이 저장소의 index.html은 실제 서비스 시작 화면이 아니라 5개 화면을 한 번에 열어보는 QA용
+       런처이므로, 아래에 내부 테스트 전용 바로가기로 계속 남겨둔다. 슈퍼바이저는 시스템 콘솔 성격이라
+       실수로 눌리지 않도록 이름 없이 아이콘만 노출한다. -->
+  <div style="margin-top:24px;padding-top:18px;border-top:1px dashed #ccc;">
+    <div class="sub" style="margin-bottom:10px;">내부 테스트용 바로가기 (실제 서비스라면 일반 사용자에게 노출되지 않는 화면)</div>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <a href="admin.html" target="_blank" style="font-size:13px;">👥 커뮤니티관리자 화면</a>
+      <a href="driver.html" target="_blank" style="font-size:13px;">🚚 배송기사 화면</a>
+      <a href="supervisor.html" target="_blank" title="슈퍼바이저 화면 (시스템 콘솔)" style="margin-left:auto;font-size:18px;opacity:0.45;text-decoration:none;">⚙</a>
+    </div>
   </div>
   <div class="footer-note" style="margin-top:30px;">데이터는 브라우저 localStorage에 저장되며, 같은 브라우저에서 연 모든 창끼리 실시간으로 동기화됩니다.</div>
 </div>

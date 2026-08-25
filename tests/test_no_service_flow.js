@@ -20,6 +20,8 @@ const { chromium } = require('playwright');
     await customer.waitForSelector('#rq-km-phone', { timeout: 3000 });
     await customer.fill('#rq-km-phone', '01022223302'); // 박서연 카마스터 연락처
     await customer.fill('#rq-car', '아이오닉5');
+    await customer.selectOption('#rq-brand', '현대');
+    await customer.fill('#rq-contract-no', 'HD-2026-3001');
     await customer.fill('#rq-date', '2026-08-01');
     await customer.fill('#rq-name', '김영희');
     await customer.fill('#rq-phone', '01033334444');
@@ -33,7 +35,7 @@ const { chromium } = require('playwright');
     await karmaster.waitForSelector('table tr.clickable', { timeout: 3000 });
     await karmaster.click('table tr.clickable >> nth=0');
     await karmaster.waitForSelector('text=고객이 등록한 계약 내용', { timeout: 3000 });
-    await karmaster.click('button[id^="km-need-n-"]'); // 시공 불필요
+    await karmaster.click('button[id^="km-dest-DEALERSHIP-"]'); // 시공 불필요
     await karmaster.click('button[id^="km-fill-submit-"]');
     await karmaster.waitForSelector('text=고객 확인 대기중', { timeout: 3000 });
     console.log('2) 카마스터: 계약 내용 검토 후 승인 (시공 불필요로 합의)');
@@ -60,9 +62,21 @@ const { chromium } = require('playwright');
     await driver.click('button[id^="arrive-"]');
     console.log('4) 배송기사: 즉시 도착 처리 (오너에게 직행 — 시공업체 경유 없음)');
 
-    await customer.waitForSelector('text=차량 수령 확인하기', { timeout: 3000 });
-    await customer.click('text=차량 수령 확인하기');
-    console.log('5) 고객: 수령 확인 (오너 단독, 카마스터 확인 불필요)');
+    await karmaster.waitForSelector('text=개인수령확인 처리', { timeout: 3000 });
+    await karmaster.click('text=개인수령확인 처리');
+    console.log('4-1) 카마스터: 개인수령확인 처리 (DELIVERED → CONFIRMED 전환 조건 중 카마스터 측)');
+
+    await customer.waitForSelector('#insp-ok', { timeout: 3000 });
+    await customer.click('#insp-ok');
+    const sigBox1 = await customer.locator('#insp-sig').boundingBox();
+    await customer.mouse.move(sigBox1.x + 20, sigBox1.y + 20);
+    await customer.mouse.down();
+    await customer.mouse.move(sigBox1.x + 100, sigBox1.y + 60);
+    await customer.mouse.move(sigBox1.x + 180, sigBox1.y + 30);
+    await customer.mouse.up();
+    await customer.waitForSelector('#insp-submit:not([disabled])', { timeout: 3000 });
+    await customer.click('#insp-submit');
+    console.log('5) 고객: 검수(이상없음)+전자서명 후 인수 확인 (카마스터 개인수령확인과 함께 DELIVERED → CONFIRMED)');
 
     await customer.waitForSelector('text=신차인도서비스가 완료되었습니다', { timeout: 3000 });
     console.log('6) 고객: 완료 화면 도달 (정찰제 확인 없이 바로 완료 — 정찰제는 애프터마켓 전용 개념)');

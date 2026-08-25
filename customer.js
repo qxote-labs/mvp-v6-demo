@@ -4,19 +4,19 @@
  * 출고 후 시공은 신차인도서비스 계약 안의 단순 옵션(시공예정 여부)일 뿐이고, 신차 케어 서비스는 그
  * 옵션과는 완전히 무관하게 "내 차량"(=신차인도서비스로 등록한 예약) 중 하나를 골라 언제든 독립적으로
  * 시작하는 별개 서비스다. */
-let loggedInCustomer = !!sessionStorage.getItem('v5_customer_logged');
-let loggedInName = sessionStorage.getItem('v5_customer_name') || '';
-let loggedInPhone = sessionStorage.getItem('v5_customer_phone') || '';
-let view = sessionStorage.getItem('v5_view') || 'landing';
-let activeId = sessionStorage.getItem('v5_active') || null;
-let careActiveId = sessionStorage.getItem('v5_care_active') || null;
-let historyPhone = sessionStorage.getItem('v5_history_phone') || '';
+let loggedInCustomer = !!sessionStorage.getItem('v6_customer_logged');
+let loggedInName = sessionStorage.getItem('v6_customer_name') || '';
+let loggedInPhone = sessionStorage.getItem('v6_customer_phone') || '';
+let view = sessionStorage.getItem('v6_view') || 'landing';
+let activeId = sessionStorage.getItem('v6_active') || null;
+let careActiveId = sessionStorage.getItem('v6_care_active') || null;
+let historyPhone = sessionStorage.getItem('v6_history_phone') || '';
 let kmSortDim = 'overall';
 
 // 로그인한 계정 정보(이름/연락처)를 계약내역 등록 폼의 "내 이름/내 연락처" 기본값으로 쓴다 — 이미
 // 로그인해서 신원이 확인된 상태인데 같은 정보를 또 타이핑하게 할 이유가 없다. 다만 실제 계약 당사자가
 // 본인과 다른 경우(예: 가족 명의 계약)를 위해 값은 그대로 두되 입력창은 계속 수정 가능하게 둔다.
-let requestDraft = { karmasterPhone: '', carModel: '', trim: '', color: '', contractDate: '', name: loggedInName, phone: loggedInPhone, nickname: '' };
+let requestDraft = { karmasterPhone: '', carModel: '', carBrand: '', contractNumber: '', trim: '', color: '', contractDate: '', name: loggedInName, phone: loggedInPhone, nickname: '' };
 let amDraft = { shopId: null, packageId: PACKAGES[1].id, optionIds: [], mode: 'online', customRequest: '', pointsUsed: 0 };
 let careSetupReservationId = null; // 신차 케어 서비스 신청 대상으로 고른 "내 차량"(=신차인도서비스 예약)
 let ratingTarget = null; // { type: 'karmaster'|'shop', targetId, refId }
@@ -24,9 +24,9 @@ let releaseAddrDraft = ''; // 최종 수령지 입력 중 폴링 재렌더로 �
 let ratingScores = {};
 
 function persistNav() {
-  sessionStorage.setItem('v5_view', view);
-  sessionStorage.setItem('v5_active', activeId || '');
-  sessionStorage.setItem('v5_care_active', careActiveId || '');
+  sessionStorage.setItem('v6_view', view);
+  sessionStorage.setItem('v6_active', activeId || '');
+  sessionStorage.setItem('v6_care_active', careActiveId || '');
 }
 function goto(v) { view = v; persistNav(); render(); }
 
@@ -80,7 +80,8 @@ function renderLoginMock() {
     <h2 style="font-size:22px;">구매자 로그인</h2>
     <div class="sub" style="margin-bottom:20px;">실제 서비스에서는 본인인증을 거쳐 로그인합니다. 데모에서는 아래 정보로 바로 진행되며, 입력한 이름·연락처는 계약내역 등록 시 자동으로 채워집니다.</div>
     <input id="login-name" type="text" placeholder="이름 (홍길동)" value="${loggedInName}" style="margin-bottom:10px;" autocomplete="off">
-    <input id="login-phone" type="tel" placeholder="010-1234-5678" value="${loggedInPhone}" style="margin-bottom:14px;" autocomplete="off">
+    <input id="login-phone" type="tel" placeholder="010-1234-5678" value="${loggedInPhone}" style="margin-bottom:10px;" autocomplete="off">
+    <input type="password" placeholder="비밀번호 (추후 지원 예정)" disabled style="margin-bottom:14px;">
     <button class="btn btn-primary" style="width:100%;" onclick="tryCustomerLogin()">간편 로그인</button>
   </div>`);
 }
@@ -96,24 +97,27 @@ function tryCustomerLogin() {
   loggedInCustomer = true;
   loggedInName = name;
   loggedInPhone = phone;
-  sessionStorage.setItem('v5_customer_logged', '1');
-  sessionStorage.setItem('v5_customer_name', name);
-  sessionStorage.setItem('v5_customer_phone', phone);
+  sessionStorage.setItem('v6_customer_logged', '1');
+  sessionStorage.setItem('v6_customer_name', name);
+  sessionStorage.setItem('v6_customer_phone', phone);
   if (name) requestDraft.name = name;
   if (phone) requestDraft.phone = phone;
   render();
 }
 
 // ===================== 랜딩 =====================
+// 신차인도서비스의 메인 동작은 "계약내역 등록"과 "계약 확인/이력조회" 두 가지다. "카마스터 찾기"는
+// 계약과 무관하게 평판만 미리 확인하고 싶은 사람을 위한 부차 기능이라, 여기 상단 버튼줄에서는 빼고
+// 아래쪽에 작은 링크로만 남긴다(계약내역 등록 폼 안에도 카마스터 연락처 입력 근처에 같은 링크가 있다).
 function renderLanding() {
   return el(`<div style="max-width:640px;margin:40px auto;text-align:center;">
     <h2 style="font-size:24px;">신차인도서비스</h2>
     <div class="sub">카마스터를 찾아 직접 연락해 상담·계약을 진행하세요. 계약이 끝나면 그 내용을 직접 등록해 주세요. 이후 과정은 이 앱에서 실시간으로 확인할 수 있습니다.</div>
     <div style="display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;">
-      <button class="btn btn-primary" style="width:auto;flex:1;" onclick="goto('karmasters')">카마스터 찾기</button>
       <button class="btn btn-primary" style="width:auto;flex:1;" onclick="goto('request')">계약내역 등록하기</button>
-      <button class="btn btn-outline" style="width:100%;" onclick="goto('history')">내 계약 확인 / 이력 조회</button>
+      <button class="btn btn-outline" style="width:auto;flex:1;" onclick="goto('history')">내 계약 확인 / 이력 조회</button>
     </div>
+    <div style="margin-top:14px;"><a href="javascript:void(0)" onclick="goto('karmasters')" style="font-size:12.5px;color:#888;">계약과 무관하게 카마스터 평판만 확인하기 →</a></div>
     <hr style="margin:32px 0;border:none;border-top:1px solid #ddd;">
     <h2 style="font-size:24px;">신차 케어 서비스</h2>
     <div class="sub">신차인도서비스와는 시간적으로 완전히 분리된 별개 서비스입니다 — 출고 전이든, 이미 받은 차든 상관없이 시공·정비가 필요할 때 언제든 이용하세요.</div>
@@ -135,14 +139,25 @@ function renderKarmasterSearch() {
   }
   const cards = list.map(({ k, rt }) => `
     <div class="km-card" style="cursor:default;">
-      <div class="name">${k.name}</div>
+      <div class="name">${karmasterDisplayName(k)}</div>
       <div class="rating">${fmtStars(rt.overall !== null ? rt.overall : k.rating)} · ${rt.count > 0 ? `앱 내 평가 ${rt.count}건` : `초기 평점 ${k.reviews}건`}</div>
-      <div class="region">${k.region}</div>
+      <div class="region">${(k.groupIds || []).map(gid => { const g = Store.getGroup(gid); return g ? g.name : gid; }).join(', ') || '-'}</div>
       <div style="margin-bottom:8px;">${k.tags.map(t => `<span class="tag">${t}</span>`).join('')}</div>
       <ul class="pkg-items">${dims.map(d => `<li>${d.label}: ${rt.avgByDim[d.id] !== null ? rt.avgByDim[d.id].toFixed(1) : '-'}</li>`).join('')}</ul>
       <div class="addr-box" style="margin-top:10px;">연락처: <b>${k.phone}</b><br>전화나 문자로 직접 연락해 상담 일정을 잡아주세요.</div>
     </div>`).join('');
   const sortOpts = [['overall', '종합 평점순']].concat(dims.map(d => [d.id, `${d.label}순`]));
+
+  // 아직 가입하지 않은 카마스터도, 다른 고객이 계약을 등록하며 그 전화번호를 남긴 순간부터 평판
+  // 레코드가 쌓인다(UnclaimedKarmasterProfile, 4.2절) — 전화번호는 마스킹해서 보여준다.
+  const unclaimed = Store.getUnclaimedKarmasters();
+  const unclaimedCards = unclaimed.map(u => `
+    <div class="km-card" style="cursor:default;">
+      <div class="name">${Store.maskPhone(u.phone)}</div>
+      <div class="rating">${u.reviews > 0 ? fmtStars(u.rating) + ` · 초기 평점 ${u.reviews}건` : '아직 평가 없음'}</div>
+      <div class="region">미가입 카마스터</div>
+      <div class="addr-box" style="margin-top:10px;">아직 앱에 가입하지 않은 카마스터입니다. 이미 상담·계약을 진행 중이라면 그 연락처로 계속 소통해 주세요.</div>
+    </div>`).join('');
 
   const wrap = el(`<div>
     <h2>카마스터 찾기</h2>
@@ -150,6 +165,7 @@ function renderKarmasterSearch() {
     <label>정렬 기준</label>
     <select id="km-sort" style="max-width:220px;">${sortOpts.map(([v, l]) => `<option value="${v}" ${kmSortDim === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
     <div class="km-grid" style="margin-top:16px;flex-wrap:wrap;">${cards}</div>
+    ${unclaimed.length > 0 ? `<h3 style="margin-top:24px;">미가입 카마스터 (평판만 확인 가능)</h3><div class="km-grid" style="margin-top:8px;flex-wrap:wrap;">${unclaimedCards}</div>` : ''}
     <div class="btn-row" style="margin-top:20px;">
       <button class="btn btn-outline" onclick="goto('landing')">← 처음으로</button>
     </div>
@@ -169,9 +185,29 @@ function renderRequest() {
   const wrap = el(`<div style="max-width:480px;">
     <h2>계약내역 등록</h2>
     <div class="sub">이미 체결한 계약의 내용을 그대로 입력해 주세요. 카마스터가 등록되어 있다면 카마스터 화면에서 이 내용을 검토·승인하는 것으로 연결됩니다.</div>
+    <div class="btn-row" style="margin-top:10px;justify-content:flex-start;">
+      <button class="btn btn-sample" id="rq-sample-fill" type="button">🧪 샘플로 채우기 (데모용)</button>
+    </div>
+    <h3 style="margin-top:20px;">핵심 식별 정보</h3>
+    <div class="hint" style="margin-bottom:10px;">브랜드·제조사 계약번호·계약자명 세 가지가 이 계약을 특정하는 키입니다 — 동명이인 구분과 향후 제조사 시스템 연동에 쓰이는 필수 정보입니다.</div>
+    <label>제조사</label>
+    <select id="rq-brand">
+      <option value="">선택 안 함</option>
+      <option value="현대">현대</option>
+      <option value="기아">기아</option>
+      <option value="기타">기타</option>
+    </select>
+    <label>제조사 계약번호</label>
+    <input id="rq-contract-no" type="text" placeholder="계약서에 적힌 실제 계약번호" autocomplete="off">
+    <div class="hint">이 앱이 자동 발급하는 접수번호(${'10-YYYYMM-NNNN'} 형식)와는 다른, 제조사·딜러가 발급한 실제 계약번호입니다.</div>
+    <label>계약자명 (내 이름)</label>
+    <input id="rq-name" type="text" placeholder="홍길동" autocomplete="off">
+    ${(loggedInName || loggedInPhone) ? '<div class="hint">로그인한 계정 정보로 자동 입력했습니다. 계약 당사자가 본인과 다르면 실제 계약자 이름으로 수정해 주세요.</div>' : ''}
+    <hr style="margin:20px 0;border:none;border-top:1px solid #ddd;">
     <label>카마스터 연락처</label>
     <input id="rq-km-phone" type="tel" placeholder="계약한 카마스터의 연락처 (010-1234-5678)" autocomplete="off">
     <div class="hint" id="rq-km-hint"></div>
+    <div style="margin-top:2px;"><a href="javascript:void(0)" onclick="goto('karmasters')" style="font-size:12px;color:#888;">연락처를 모르거나 카마스터를 아직 못 정했다면 → 카마스터 찾기</a></div>
     <label style="margin-top:16px;">차량 모델</label>
     <input id="rq-car" type="text" placeholder="예: 쏘렌토 하이브리드" autocomplete="off">
     <label>트림 / 옵션</label>
@@ -180,11 +216,8 @@ function renderRequest() {
     <input id="rq-color" type="text" placeholder="예: 스노우 펄" autocomplete="off">
     <label>계약일자</label>
     <input id="rq-date" type="date" autocomplete="off">
-    <label style="margin-top:16px;">내 이름</label>
-    <input id="rq-name" type="text" placeholder="홍길동" autocomplete="off">
-    <label>내 연락처</label>
+    <label style="margin-top:16px;">내 연락처</label>
     <input id="rq-phone" type="tel" placeholder="010-1234-5678" autocomplete="off">
-    ${(loggedInName || loggedInPhone) ? '<div class="hint">로그인한 계정 정보로 자동 입력했습니다. 계약 당사자가 본인과 다르면 위 이름·연락처를 실제 계약자 정보로 수정해 주세요.</div>' : ''}
     <label>동호회 닉네임 (선택)</label>
     <input id="rq-nick" type="text" placeholder="예: 차박러123" autocomplete="off">
     <button class="btn btn-primary btn-auto" id="rq-submit" style="margin-top:14px;" disabled>계약내역 등록하기</button>
@@ -192,11 +225,22 @@ function renderRequest() {
     <button class="btn btn-outline btn-auto" style="margin-top:8px;" onclick="goto('landing')">← 처음으로</button>
   </div>`);
   const kmPhoneEl = wrap.querySelector('#rq-km-phone'), kmHintEl = wrap.querySelector('#rq-km-hint');
-  const carEl = wrap.querySelector('#rq-car'), trimEl = wrap.querySelector('#rq-trim'), colorEl = wrap.querySelector('#rq-color'), dateEl = wrap.querySelector('#rq-date');
+  const carEl = wrap.querySelector('#rq-car'), brandEl = wrap.querySelector('#rq-brand'), contractNoEl = wrap.querySelector('#rq-contract-no'), trimEl = wrap.querySelector('#rq-trim'), colorEl = wrap.querySelector('#rq-color'), dateEl = wrap.querySelector('#rq-date');
   const nameEl = wrap.querySelector('#rq-name'), phoneEl = wrap.querySelector('#rq-phone'), nickEl = wrap.querySelector('#rq-nick');
   const submitBtn = wrap.querySelector('#rq-submit'), hintEl = wrap.querySelector('#rq-hint');
   nameEl.value = requestDraft.name; phoneEl.value = requestDraft.phone; nickEl.value = requestDraft.nickname; kmPhoneEl.value = requestDraft.karmasterPhone || '';
-  carEl.value = requestDraft.carModel; trimEl.value = requestDraft.trim; colorEl.value = requestDraft.color; dateEl.value = requestDraft.contractDate;
+  carEl.value = requestDraft.carModel; brandEl.value = requestDraft.carBrand; contractNoEl.value = requestDraft.contractNumber; trimEl.value = requestDraft.trim; colorEl.value = requestDraft.color; dateEl.value = requestDraft.contractDate;
+  wrap.querySelector('#rq-sample-fill').addEventListener('click', () => {
+    // 값 전부를 한눈에 "샘플/테스트"임을 알 수 있게 채운다 — 카마스터 연락처만 예외로, 시연이 바로
+    // 이어지도록 씨드 카마스터(김도현) 번호를 쓴다.
+    requestDraft = {
+      karmasterPhone: '010-2222-3301',
+      carModel: '테스트카', carBrand: '기타', contractNumber: 'SAMPLE-' + Math.floor(1000 + Math.random() * 9000),
+      trim: '테스트트림', color: '테스트색상', contractDate: new Date().toISOString().slice(0, 10),
+      name: '테스트고객', phone: '010-0000-0000', nickname: '테스트닉네임',
+    };
+    render();
+  });
 
   function phoneFormat(el) {
     const f = formatPhoneDigits(el.value);
@@ -205,20 +249,24 @@ function renderRequest() {
   }
   function validate() {
     const missing = [];
+    if (!requestDraft.carBrand) missing.push('제조사');
+    if (!requestDraft.contractNumber.trim()) missing.push('제조사 계약번호');
+    if (requestDraft.name.trim().length < 2) missing.push('계약자명(2자 이상)');
     if (!/^010-?\d{3,4}-?\d{4}$/.test(requestDraft.karmasterPhone || '')) missing.push('카마스터 연락처');
     if (requestDraft.carModel.trim().length < 2) missing.push('차량 모델');
     if (!requestDraft.contractDate) missing.push('계약일자');
-    if (requestDraft.name.trim().length < 2) missing.push('이름(2자 이상)');
     if (!/^010-?\d{3,4}-?\d{4}$/.test(requestDraft.phone)) missing.push('내 연락처(010-0000-0000 형식)');
     submitBtn.disabled = missing.length > 0;
     hintEl.textContent = missing.length > 0 ? `다음 항목을 확인해주세요: ${missing.join(', ')}` : '';
     const km = Store.getKarmasterByPhone(requestDraft.karmasterPhone || '');
     kmHintEl.textContent = requestDraft.karmasterPhone && requestDraft.karmasterPhone.length >= 12
-      ? (km ? `등록된 카마스터입니다: ${km.name} — 승인 요청이 바로 전달됩니다.` : '아직 등록되지 않은 카마스터입니다 — 조회번호로 신규 등록됩니다.')
+      ? (km ? `등록된 카마스터입니다: ${karmasterDisplayName(km)} — 승인 요청이 바로 전달됩니다.` : '아직 등록되지 않은 카마스터입니다 — 조회번호로 신규 등록됩니다.')
       : '';
   }
   kmPhoneEl.addEventListener('input', () => { requestDraft.karmasterPhone = phoneFormat(kmPhoneEl); validate(); });
   carEl.addEventListener('input', () => { requestDraft.carModel = carEl.value; validate(); });
+  brandEl.addEventListener('change', () => { requestDraft.carBrand = brandEl.value; validate(); });
+  contractNoEl.addEventListener('input', () => { requestDraft.contractNumber = contractNoEl.value; validate(); });
   trimEl.addEventListener('input', () => { requestDraft.trim = trimEl.value; });
   colorEl.addEventListener('input', () => { requestDraft.color = colorEl.value; });
   dateEl.addEventListener('change', () => { requestDraft.contractDate = dateEl.value; validate(); });
@@ -229,10 +277,10 @@ function renderRequest() {
   submitBtn.addEventListener('click', () => {
     const r = Store.startContractRequest({
       karmasterPhone: requestDraft.karmasterPhone,
-      carModel: requestDraft.carModel.trim(), trim: requestDraft.trim.trim(), color: requestDraft.color.trim(), contractDate: requestDraft.contractDate,
+      carModel: requestDraft.carModel.trim(), carBrand: requestDraft.carBrand, contractNumber: requestDraft.contractNumber.trim(), trim: requestDraft.trim.trim(), color: requestDraft.color.trim(), contractDate: requestDraft.contractDate,
       customer: { name: requestDraft.name.trim(), phone: requestDraft.phone, nickname: requestDraft.nickname.trim() },
     });
-    requestDraft = { karmasterPhone: '', carModel: '', trim: '', color: '', contractDate: '', name: loggedInName, phone: loggedInPhone, nickname: '' };
+    requestDraft = { karmasterPhone: '', carModel: '', carBrand: '', contractNumber: '', trim: '', color: '', contractDate: '', name: loggedInName, phone: loggedInPhone, nickname: '' };
     activeId = r.id;
     goto('detail');
   });
@@ -247,6 +295,7 @@ let _transitTicker = null;
 function stopTransitTicker() { if (_transitTicker) { clearInterval(_transitTicker); _transitTicker = null; } }
 
 function computePhase(r) {
+  if (r.stage === 'EXCEPTION') return 'exception';
   // 카마스터 지정업체(A-경로)로 향하는 1차 구간은 고객에게 어느 업체인지, 실시간 배송 상세를 노출하지
   // 않는다 — 카마스터-업체 간 별개 거래이기 때문이다(shop_transit). 최종 목적지로 가는 구간(2차 구간,
   // 또는 A-경로가 아닌 일반 구간)만 실시간 배송 현황(transit)을 보여준다.
@@ -254,9 +303,9 @@ function computePhase(r) {
   if (r.stage === '고객요청') return 'request_pending';
   if (r.stage === '계약등록') return 'contract_pending';
   if (r.stage === '계약확정') return 'release_prep';
-  if (r.stage === '시공중') return 'shop_progress';
-  if (r.stage === '수령확인대기') return 'delivery_confirm';
-  if (r.stage === '인도완료') return 'delivery_done';
+  if (r.stage === 'CUSTOMIZING') return 'shop_progress';
+  if (r.stage === 'DELIVERED') return 'delivery_confirm';
+  if (r.stage === 'CONFIRMED') return 'delivery_done';
   return 'contract_pending';
 }
 
@@ -297,13 +346,13 @@ function renderDetail() {
         return el(`<div style="max-width:480px;">
           <h2>계약내역이 등록되었습니다</h2>
           <span class="badge wait">카마스터 승인 대기 · ${r.id}</span>
-          <div class="msg-box"><b>${km.name}</b>님의 화면에 등록하신 계약 내용이 바로 전달되었습니다. 카마스터가 내용을 검토하고 승인하면 다음 단계로 진행됩니다. 별도로 전달하실 내용은 없습니다.</div>
+          <div class="msg-box"><b>${karmasterDisplayName(km)}</b>님의 화면에 등록하신 계약 내용이 바로 전달되었습니다. 카마스터가 내용을 검토하고 승인하면 다음 단계로 진행됩니다. 별도로 전달하실 내용은 없습니다.</div>
         </div>`);
       }
       const box = el(`<div style="max-width:480px;">
         <h2>계약내역이 등록되었습니다</h2>
         <span class="badge wait">조회번호 전달 대기 · ${r.id}</span>
-        <div class="msg-box">입력하신 연락처는 아직 이 서비스에 등록되지 않은 카마스터입니다. 아래 조회번호를 그 카마스터에게 직접 전달해 주세요(문자·전화 등, 앱이 대신 보내지 않습니다) — 카마스터가 이 번호로 처음 접속하면 계정이 자동으로 만들어지며 이 계약에 연결됩니다.</div>
+        <div class="msg-box">계약 내용은 이미 등록되어 카마스터가 접속하는 즉시 확인할 수 있습니다. 다만 입력하신 연락처는 아직 이 서비스에 등록되지 않은 카마스터라, 아래 조회번호만은 앱이 대신 전달하지 못합니다 — 문자·전화 등으로 직접 전달해 주세요(실제 서비스에서는 SMS로 자동 발송될 예정입니다). 카마스터가 이 번호로 처음 접속하면 계정이 자동으로 만들어지며 이 계약에 연결됩니다.</div>
         <div id="confirm-code-display" style="font-size:32px;font-weight:800;letter-spacing:6px;text-align:center;padding:22px;background:#f3f8fd;border-radius:10px;border:1.5px dashed #185fa5;">${r.confirmCode}</div>
         <button class="btn btn-outline btn-auto" id="copy-code-btn" style="margin-top:10px;">조회번호 복사하기</button>
         <div class="hint" id="copy-code-hint" style="margin-top:6px;"></div>
@@ -318,9 +367,10 @@ function renderDetail() {
     contract_pending: () => el(`<div>
       <h2>카마스터가 승인한 계약 내용을 확인해 주세요</h2>
       <span class="badge wait">고객 확인 대기 · ${r.id}</span>
-      <div class="msg-box">${km.name}님이 등록하신 계약 내용을 검토하고 아래와 같이 승인했습니다.<br>
+      <div class="msg-box">${karmasterDisplayName(km)}님이 등록하신 계약 내용을 검토하고 아래와 같이 승인했습니다.<br>
+        제조사 계약번호: <b>${r.carBrand || '-'} · ${r.contractNumber || '미입력'}</b><br>
         차량: <b>${r.carModel}</b>${r.trim ? ` · ${r.trim}` : ''}${r.color ? ` · ${r.color}` : ''}${r.contractDate ? `<br>계약일자: ${r.contractDate}` : ''}<br>
-        출고 후 시공예정: <b>${r.needsService ? '필요' : '불필요'}</b>
+        목적지 유형: <b>${destinationTypeLabel(r.destinationType)}</b>
         ${r.consultMemo ? `<br>상담 메모: ${r.consultMemo}` : ''}</div>
       <button class="btn btn-primary btn-auto" onclick="doConfirmContract()">계약 내용 확인 →</button>
     </div>`),
@@ -328,10 +378,11 @@ function renderDetail() {
     release_prep: () => {
       const box = el(`<div>
         <h2>계약이 확정되었습니다</h2>
-        <span class="badge done">계약 확정${r.needsService ? ' · 출고 후 시공예정' : ' · 시공 없이 순수 차량 구매'}</span>
+        <span class="badge done">계약 확정${hasCustomizing(r) ? ' · 출고 후 시공예정' : ' · 시공 없이 순수 차량 구매'}</span>
         <div class="msg-box">
+          제조사 계약번호: <b>${r.carBrand || '-'} · ${r.contractNumber || '미입력'}</b><br>
           차량: <b>${r.carModel}</b>${r.trim ? ` · ${r.trim}` : ''}${r.color ? ` · ${r.color}` : ''}${r.contractDate ? `<br>계약일자: ${r.contractDate}` : ''}<br>
-          출고 후 시공예정: <b>${r.needsService ? '필요' : '불필요'}</b>
+          목적지 유형: <b>${destinationTypeLabel(r.destinationType)}</b>
           ${r.consultMemo ? `<br>상담 메모: ${r.consultMemo}` : ''}
         </div>
       </div>`);
@@ -354,22 +405,37 @@ function renderDetail() {
       <span class="badge wait">지정업체로 이동중</span>
       <div class="msg-box">차량이 공장에서 출고되어 카마스터가 지정한 업체로 이동하고 있습니다. 도착 후 작업이 진행되며, 완료되면 최종 목적지로 재배송됩니다. 이 단계에서 별도로 확인하실 내용은 없습니다.</div>
     </div>`),
-    shop_progress: () => el(`<div>
+    shop_progress: () => {
+      const pub = Store.getAugmentation(r).published;
+      return el(`<div>
       <h2>차량이 지정업체에서 작업 진행중입니다</h2>
       <span class="badge wait">카마스터 확인 대기</span>
-      <div class="msg-box">차량이 카마스터가 지정한 업체에 도착해 작업이 진행되고 있습니다. 카마스터가 시공완료를 확인하면 최종 목적지로 재배송이 시작됩니다. 이 단계에서 별도로 확인하실 내용은 없습니다.</div>
-    </div>`),
+      <div class="msg-box">${pub.customizingProgress || '차량이 카마스터가 지정한 업체에 도착해 작업이 진행되고 있습니다. 카마스터가 시공완료를 확인하면 최종 목적지로 재배송이 시작됩니다.'}</div>
+      <h4 style="margin-top:14px;">현장 실시간 업로드 사진</h4>
+      ${renderPhotoGalleryHTML(Store.getAugmentation(r).customizingPhotos)}
+      <div class="hint" style="margin-top:10px;">이 시공은 카마스터와의 별도 옵션이며, 인도 후 신청하는 신차 케어 서비스와는 무관합니다.</div>
+    </div>`);
+    },
 
-    delivery_confirm: () => el(`<div>
-      <h2>차량이 도착했습니다</h2>
-      <div class="msg-box">차량 수령을 확인해 주세요. 확인하시면 신차인도서비스가 종료됩니다.</div>
-      <button class="btn btn-primary btn-auto" onclick="doConfirmDelivery()">차량 수령 확인하기</button>
-    </div>`),
+    delivery_confirm: () => renderDeliveryConfirm(r),
+
+    exception: () => {
+      const pub = Store.getAugmentation(r).published;
+      const reasonText = pub.delayReasonCode
+        ? `${delayReasonLabel(pub.delayReasonCode)}${pub.delayReasonNote ? ` — ${pub.delayReasonNote}` : ''}`
+        : '카마스터가 지연 상황을 확인하고 있습니다. 사유가 확인되는 대로 이곳에 안내됩니다.';
+      return el(`<div>
+      <span class="badge warn">배송 지연/예외 상태</span>
+      <h2>배송에 문제가 발생했습니다</h2>
+      <div class="msg-box" style="border-left-color:#c22;">${reasonText}</div>
+      <div class="hint">문의사항은 아래 메시지창으로 카마스터에게 바로 전달할 수 있습니다.</div>
+    </div>`);
+    },
 
     delivery_done: () => el(`<div style="max-width:520px;">
       <h2 style="color:#3b6d11;">신차인도서비스가 완료되었습니다</h2>
       <span class="badge done">인도 완료</span>
-      <p style="font-size:13px;color:#444;line-height:1.7;">${km.name} 카마스터와 함께한 차량 인도 과정이 마무리되었습니다.</p>
+      <p style="font-size:13px;color:#444;line-height:1.7;">${karmasterDisplayName(km)} 카마스터와 함께한 차량 인도 과정이 마무리되었습니다.</p>
       ${r.karmasterRated
         ? `<span class="badge done">카마스터 평가 완료 · +${fmtPoint(r.karmasterPointsEarned)} 적립</span>`
         : `<button class="btn btn-primary btn-auto" onclick="goRate('karmaster','${r.karmasterId}','${r.id}')">카마스터 평가하고 포인트 받기</button>
@@ -378,17 +444,181 @@ function renderDetail() {
   };
 
   const phase = computePhase(r);
-  const wrap = el(`<div><div id="phase-slot"></div></div>`);
+  const wrap = el(`<div><div id="stepper-slot">${renderStatusStepperHTML(r)}</div><div id="phase-slot"></div></div>`);
   const slot = wrap.querySelector('#phase-slot');
   slot.appendChild((renderers[phase] || renderers['contract_pending'])());
-  if (r.stage === '인도완료' && !r.karmasterRated && phase !== 'delivery_done') {
+  if (r.stage === 'CONFIRMED' && !r.karmasterRated && phase !== 'delivery_done') {
     slot.appendChild(el(`<div class="msg-box" style="border-left:3px solid #185fa5;margin-top:16px;">아직 카마스터를 평가하지 않으셨습니다.
       <button class="btn btn-sm" style="margin-left:8px;" onclick="goRate('karmaster','${r.karmasterId}','${r.id}')">평가하고 포인트 받기</button></div>`));
   }
   slot.appendChild(el(`<div class="admin-controls" style="margin-top:24px;"><h4>전체 처리 이력</h4>${renderHistoryLogHTML(r)}</div>`));
-  slot.appendChild(renderMessagePanel(r, 'customer', km ? km.name : '카마스터'));
+  slot.appendChild(renderMessagePanel(r, 'customer', km ? karmasterDisplayName(km) : '카마스터'));
   const back = el(`<div style="margin-top:24px;"><button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('history')">내 계약 확인으로</button></div>`);
   wrap.appendChild(back);
+  return wrap;
+}
+
+// 매니저가 게시한 ETA/위치 보정 코멘트를 보여주는 "핵심 현황 배너". 매니저가 아직 아무것도 게시하지
+// 않았으면 빈 문자열을 돌려줘 화면에 아무것도 추가되지 않는다("확인 중"류 문구를 강제로 채우지 않는다).
+function renderPublishedBannerHTML(r) {
+  const pub = Store.getAugmentation(r).published;
+  if (!pub.eta && !pub.locationNote) return '';
+  return `<div class="msg-box" style="margin-top:10px;">
+    ${pub.eta ? `<div><b>도착 예정</b>: ${pub.eta.replace('T', ' ')}</div>` : ''}
+    ${pub.locationNote ? `<div>${pub.locationNote}</div>` : ''}
+  </div>`;
+}
+function renderPhotoGalleryHTML(photos) {
+  const live = (photos || []).filter(p => !p.withdrawn);
+  if (!live.length) return `<div class="hint">아직 업로드된 사진이 없습니다.</div>`;
+  return `<div class="photo-row">${live.map(p => `<img src="${p.src}" alt="${p.label}" style="flex:1;height:100px;object-fit:cover;border-radius:8px;border:1px solid #ddd;">`).join('')}</div>`;
+}
+
+// ===================== DELIVERED: 검수/전자서명 (ui-items-spec.md 1.2절) =====================
+// 서명 캔버스는 Store가 아니라 화면에만 존재하는 상태다 — 폴링 재렌더가 도중에 한 번 더 일어나도(예:
+// 다른 창에서 카마스터가 같은 건을 개인수령확인 처리) 그려둔 서명이 지워지지 않도록, 예약번호별
+// dataURL 캐시를 따로 들고 있다가 캔버스가 다시 그려질 때 그 위에 복원한다.
+let inspectionDrafts = {}; // id -> { result, note, photos: [{src,label}] }
+let signatureCache = {}; // id -> dataURL (제출 전까지만 유지, 제출 후 비움)
+function getInspectionDraft(id) {
+  if (!inspectionDrafts[id]) inspectionDrafts[id] = { result: null, note: '', photos: [] };
+  return inspectionDrafts[id];
+}
+
+function attachSignaturePad(canvas, id, onStrokeChange) {
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#222'; ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  let drawing = false;
+  if (signatureCache[id]) {
+    const img = new Image();
+    img.onload = () => ctx.drawImage(img, 0, 0);
+    img.src = signatureCache[id];
+  }
+  function pos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const p = e.touches && e.touches.length ? e.touches[0] : e;
+    return { x: p.clientX - rect.left, y: p.clientY - rect.top };
+  }
+  function start(e) { drawing = true; const p = pos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); e.preventDefault(); }
+  function move(e) {
+    if (!drawing) return;
+    const p = pos(e); ctx.lineTo(p.x, p.y); ctx.stroke();
+    signatureCache[id] = canvas.toDataURL('image/png');
+    onStrokeChange(true);
+    e.preventDefault();
+  }
+  function end() { drawing = false; }
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  canvas.addEventListener('touchmove', move, { passive: false });
+  canvas.addEventListener('touchend', end);
+  return {
+    clear() { ctx.clearRect(0, 0, canvas.width, canvas.height); delete signatureCache[id]; onStrokeChange(false); },
+  };
+}
+
+function renderDeliveryConfirm(r) {
+  const pub = Store.getAugmentation(r).published;
+  const photoSection = `<h4>인수 사진</h4>${renderPhotoGalleryHTML(Store.getAugmentation(r).deliveryPhotos)}${pub.locationNote ? `<div class="hint" style="margin-top:8px;">${pub.locationNote}</div>` : ''}`;
+
+  if (r.isCustomerApproved) {
+    return el(`<div>
+      <h2>차량이 안전하게 도착했습니다</h2>
+      <div class="sub">외관을 확인해 주세요${r.deliveredAt ? ` · 인수 완료 시각: ${fmtTime(r.deliveredAt)}` : ''}</div>
+      <div class="hint" style="margin:10px 0;">카마스터 개인수령확인: <span class="badge ${r.isManagerConfirmed ? 'done' : 'wait'}">${r.isManagerConfirmed ? '완료' : '대기중'}</span></div>
+      ${photoSection}
+      <div class="msg-box" style="margin-top:14px;">고객님의 최종인수승인이 접수되었습니다 (검수: ${r.inspectionResult === 'issue' ? '이슈 발견' : '이상없음'}${r.inspectionNote ? ` — ${r.inspectionNote}` : ''}). 카마스터 개인수령확인이 끝나면 신차인도서비스가 종료됩니다.</div>
+      ${r.signature ? `<img src="${r.signature}" alt="전자서명" style="border:1px solid #ddd;border-radius:8px;max-width:280px;margin-top:8px;display:block;">` : ''}
+    </div>`);
+  }
+
+  const d = getInspectionDraft(r.id);
+  const wrap = el(`<div>
+    <h2>차량이 안전하게 도착했습니다</h2>
+    <div class="sub">외관을 확인해 주세요${r.deliveredAt ? ` · 인수 완료 시각: ${fmtTime(r.deliveredAt)}` : ''}</div>
+    <div class="hint" style="margin:10px 0;">카마스터 개인수령확인: <span class="badge ${r.isManagerConfirmed ? 'done' : 'wait'}">${r.isManagerConfirmed ? '완료' : '대기중'}</span></div>
+    ${photoSection}
+
+    <h4 style="margin-top:18px;">검수 결과</h4>
+    <div class="btn-row" style="margin-top:0;">
+      <button class="btn btn-sm" id="insp-ok">이상없음</button>
+      <button class="btn btn-sm" id="insp-issue">이슈 발견</button>
+    </div>
+    <div class="hint" id="insp-status"></div>
+    <div id="insp-note-wrap" style="display:none;">
+      <label>특이사항 메모 (최대 500자)</label>
+      <textarea id="insp-note" rows="3" maxlength="500" placeholder="예: 우측 앞 범퍼 스크래치 발견"></textarea>
+      <label>사진 첨부 (선택, 이슈 근거자료)</label>
+      <div id="insp-photos" class="photo-row" style="margin-bottom:8px;"></div>
+      <div class="btn-row" style="margin-top:0;">
+        <button class="btn btn-sm" id="insp-photo-sample">샘플 이미지 추가</button>
+        <label class="btn btn-sm" style="cursor:pointer;">파일 선택 업로드<input type="file" id="insp-photo-file" accept="image/*" style="display:none;"></label>
+      </div>
+    </div>
+
+    <h4 style="margin-top:18px;">전자서명</h4>
+    <div class="hint" style="margin-bottom:6px;">아래 칸에 마우스(또는 터치)로 서명해 주세요.</div>
+    <canvas id="insp-sig" width="360" height="140" style="border:1px solid #ccc;border-radius:8px;background:#fff;touch-action:none;max-width:100%;display:block;"></canvas>
+    <button class="btn btn-outline btn-sm" id="insp-sig-clear" style="margin-top:6px;">서명 지우기</button>
+
+    <button class="btn btn-primary btn-auto" id="insp-submit" style="margin-top:16px;" disabled>인수 확인</button>
+  </div>`);
+
+  const statusEl = wrap.querySelector('#insp-status'), noteWrap = wrap.querySelector('#insp-note-wrap'), noteEl = wrap.querySelector('#insp-note');
+  const photosBox = wrap.querySelector('#insp-photos'), submitBtn = wrap.querySelector('#insp-submit');
+  noteEl.value = d.note;
+  let hasSignature = !!signatureCache[r.id];
+
+  function renderPhotoThumbs() {
+    photosBox.innerHTML = '';
+    d.photos.forEach((p) => photosBox.appendChild(el(`<img src="${p.src}" alt="${p.label}" style="flex:1;height:80px;object-fit:cover;border-radius:8px;border:1px solid #ddd;">`)));
+  }
+  renderPhotoThumbs();
+
+  function refreshStatus() {
+    statusEl.textContent = d.result === null ? '선택되지 않음' : (d.result === 'issue' ? '이슈 발견으로 선택됨' : '이상없음으로 선택됨');
+    noteWrap.style.display = d.result === 'issue' ? '' : 'none';
+  }
+  function validate() {
+    const noteOk = d.result !== 'issue' || d.note.trim().length > 0;
+    submitBtn.disabled = !(d.result !== null && noteOk && hasSignature);
+  }
+  refreshStatus(); validate();
+
+  wrap.querySelector('#insp-ok').addEventListener('click', () => { d.result = 'ok'; refreshStatus(); validate(); });
+  wrap.querySelector('#insp-issue').addEventListener('click', () => { d.result = 'issue'; refreshStatus(); validate(); });
+  noteEl.addEventListener('input', () => { d.note = noteEl.value; validate(); });
+  wrap.querySelector('#insp-photo-sample').addEventListener('click', () => {
+    if (d.photos.length >= 6) return;
+    d.photos.push({ src: generateSamplePhoto(d.photos.length, `검수 사진 ${d.photos.length + 1}`), label: `검수 사진 ${d.photos.length + 1}` });
+    renderPhotoThumbs();
+  });
+  const fileInput = wrap.querySelector('#insp-photo-file');
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file || !file.type.startsWith('image/') || d.photos.length >= 6) return;
+    const reader = new FileReader();
+    reader.onload = () => { d.photos.push({ src: reader.result, label: file.name }); renderPhotoThumbs(); };
+    reader.readAsDataURL(file);
+  });
+
+  const sigCanvas = wrap.querySelector('#insp-sig');
+  const pad = attachSignaturePad(sigCanvas, r.id, (has) => { hasSignature = has; validate(); });
+  wrap.querySelector('#insp-sig-clear').addEventListener('click', () => pad.clear());
+
+  submitBtn.addEventListener('click', () => {
+    const updated = Store.submitCustomerInspection(r.id, {
+      inspectionResult: d.result, inspectionNote: d.note, photos: d.photos, signature: signatureCache[r.id],
+    });
+    if (updated && updated.isCustomerApproved) {
+      delete inspectionDrafts[r.id];
+      delete signatureCache[r.id];
+    }
+    render();
+  });
+
   return wrap;
 }
 
@@ -400,6 +630,7 @@ function renderTransit(r) {
     <div class="summary-line"><span>담당 배송기사</span><span id="driver-name-el">${tp.driverName}</span></div>
     <div id="dstepper-slot">${renderDeliveryStepperHTML(r)}</div>
     <div class="hint" id="transit-hint-el" style="margin-top:8px;">다음 위치까지 약 ${tp.remainSec}초 남음 (데모 시뮬레이션)</div>
+    ${renderPublishedBannerHTML(r)}
   </div>`);
   _transitTicker = setInterval(() => {
     const cur = Store.getReservation(activeId);
@@ -446,9 +677,8 @@ function renderMessagePanel(r, myRole, counterpartLabel) {
   return box;
 }
 
-// ===================== 계약 확인 / 수령 확인 =====================
+// ===================== 계약 확인 =====================
 function doConfirmContract() { Store.confirmContractByCustomer(activeId); render(); }
-function doConfirmDelivery() { Store.confirmDelivery(activeId); render(); }
 
 // ===================== 신차 케어 서비스 (신차인도서비스와 완전히 독립) =====================
 // "내 차량"(=신차인도서비스로 등록한 예약) 목록에서 하나를 골라 신청한다. 출고 전이든 이미 받은
@@ -514,7 +744,7 @@ function renderCareSetup() {
 }
 
 function renderAmSetup(source) {
-  const shopCards = Store.getShops().map(s => {
+  const shopCards = Store.getApprovedShops().map(s => {
     const rt = Store.getRatingsFor('shop', s.id);
     const sel = amDraft.shopId === s.id;
     return `<div class="shop-card ${sel ? 'sel' : ''}" onclick="selectAmShop('${s.id}')">
@@ -820,7 +1050,7 @@ function renderHistory() {
       <button class="btn btn-primary btn-auto" id="hist-search">조회</button>
     </div>
     <div id="hist-filter-row" style="display:none;max-width:420px;margin-bottom:24px;">
-      <input id="hist-filter" type="text" placeholder="계약번호·카마스터 이름·차종으로 좁혀보기" autocomplete="off">
+      <input id="hist-filter" type="text" placeholder="접수번호·제조사 계약번호·카마스터 이름·차종으로 좁혀보기" autocomplete="off">
     </div>
     <div id="hist-results"></div>
   </div>`);
@@ -834,18 +1064,19 @@ function renderHistory() {
     const q = filterInput.value.trim().toLowerCase();
     const filtered = !q ? currentList : currentList.filter(r => {
       const km = Store.getKarmaster(r.karmasterId);
-      return r.id.toLowerCase().includes(q) || (r.carModel || '').toLowerCase().includes(q) || (km && km.name.toLowerCase().includes(q));
+      return r.id.toLowerCase().includes(q) || (r.contractNumber || '').toLowerCase().includes(q) || (r.carModel || '').toLowerCase().includes(q) || (km && karmasterDisplayName(km).toLowerCase().includes(q));
     });
     resultsBox.innerHTML = '';
     if (filtered.length === 0) { resultsBox.appendChild(el(`<div class="hint">검색 결과가 없습니다.</div>`)); return; }
-    const table = el(`<table><tr><th>계약번호</th><th>계약일자</th><th>차종</th><th>카마스터</th><th>단계</th><th>평가</th></tr></table>`);
+    const table = el(`<table><tr><th>접수번호</th><th>제조사 계약번호</th><th>계약일자</th><th>차종</th><th>카마스터</th><th>단계</th><th>평가</th></tr></table>`);
     filtered.forEach(r => {
       const km = Store.getKarmaster(r.karmasterId);
-      const needsKmRating = r.stage === '인도완료' && !r.karmasterRated;
+      const needsKmRating = r.stage === 'CONFIRMED' && !r.karmasterRated;
       const ratingCell = needsKmRating ? '<span class="badge wait">카마스터 평가대기</span>' : '-';
       // 목록에서는 앱 등록시각(createdAt)보다 실제 계약서상의 계약일자(contractDate)가 계약을 식별하는 기준으로 더 유의미하다.
-      const tr = elRow(`<tr class="clickable"><td>${r.id}</td><td>${r.contractDate || '-'}</td><td>${r.carModel || '-'}</td><td>${km ? km.name : '-'}</td>
-        <td><span class="badge ${stageBadgeClass(r.stage)}">${r.stage}</span></td><td>${ratingCell}</td></tr>`);
+      // "접수번호"(r.id)는 이 앱이 자동 채번하는 내부 ID고, "제조사 계약번호"(r.contractNumber)는 제조사·딜러가 발급한 실제 계약번호다 — 서로 다른 값이라 나란히 보여준다.
+      const tr = elRow(`<tr class="clickable"><td>${r.id}</td><td>${r.contractNumber || '-'}</td><td>${r.contractDate || '-'}</td><td>${r.carModel || '-'}</td><td>${km ? karmasterDisplayName(km) : '-'}</td>
+        <td><span class="badge ${stageBadgeClass(r.stage)}">${stageDisplayLabel(r.stage)}</span></td><td>${ratingCell}</td></tr>`);
       tr.addEventListener('click', () => { activeId = r.id; releaseAddrDraft = ''; goto('detail'); });
       table.appendChild(tr);
     });
@@ -853,7 +1084,7 @@ function renderHistory() {
   }
   function doSearch() {
     historyPhone = input.value;
-    sessionStorage.setItem('v5_history_phone', historyPhone);
+    sessionStorage.setItem('v6_history_phone', historyPhone);
     currentList = Store.getReservationsByPhone(historyPhone);
     resultsBox.innerHTML = '';
     if (!historyPhone) { filterRow.style.display = 'none'; return; }

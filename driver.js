@@ -1,7 +1,7 @@
 /* driver.js (v5) — 배송기사 화면은 최소한으로 유지한다. 배송은 기본적으로
  * 타이머 기반 자동 시뮬레이션으로 진행되며, 배송기사는 필요시 "즉시 도착 처리"만 누른다. */
 
-let loggedInDriverId = sessionStorage.getItem('v5_driver_id') || null;
+let loggedInDriverId = sessionStorage.getItem('v6_driver_id') || null;
 
 let _rendering = false;
 function render() { if (_rendering) return; _rendering = true; try { _renderInner(); } finally { _rendering = false; } }
@@ -20,10 +20,11 @@ function renderLogin() {
     <h2 style="font-size:22px;">배송기사 로그인</h2>
     <div class="sub" style="margin-bottom:20px;">등록된 연락처로 로그인합니다.</div>
     <input id="login-phone" type="tel" placeholder="010-1234-5678" style="margin-bottom:8px;" autocomplete="off">
+    <input type="password" placeholder="비밀번호 (추후 지원 예정)" disabled style="margin-bottom:8px;">
     <div class="hint" id="login-hint" style="margin-bottom:10px;min-height:16px;"></div>
     <button class="btn btn-primary" style="width:100%;" id="login-submit">로그인</button>
     <div style="margin-top:28px;padding-top:16px;border-top:1px solid #ddd;text-align:left;">
-      <label style="font-size:11.5px;color:#888;">테스트 계정으로 빠른 로그인</label>
+      <label style="font-size:11.5px;color:#888;">데모 계정으로 빠른 로그인</label>
       <select id="quick-login" style="margin-top:6px;">
         <option value="">계정 선택…</option>
         ${Store.getDrivers().map(d => `<option value="${d.id}">${d.name} · ${d.phone}</option>`).join('')}
@@ -41,8 +42,13 @@ function renderLogin() {
   wrap.querySelector('#quick-login').addEventListener('change', (e) => { if (e.target.value) tryLogin(e.target.value); });
   return wrap;
 }
-function tryLogin(id) { loggedInDriverId = id; sessionStorage.setItem('v5_driver_id', id); render(); }
-function logout() { loggedInDriverId = null; sessionStorage.removeItem('v5_driver_id'); render(); }
+function tryLogin(id) {
+  loggedInDriverId = id; sessionStorage.setItem('v6_driver_id', id);
+  const driver = Store.getDrivers().find(d => d.id === id);
+  if (driver) Store.touchUserRole(driver.phone, driver.name, 'driver'); // 통합 User에 driver 역할 속성 부착(메뉴는 숨김이지만 역할 모델은 유지)
+  render();
+}
+function logout() { loggedInDriverId = null; sessionStorage.removeItem('v6_driver_id'); render(); }
 
 function _renderInner() {
   const root = document.getElementById('body-root');
@@ -60,7 +66,7 @@ function _renderInner() {
   const careList = Store.getCareOrders().filter(c => c.transit && c.transit.active).map(c => ({ entity: c, kind: 'care' }));
   const list = [...resList, ...careList];
   document.getElementById('header-right').textContent = `${driver.name} 로그인중 · 배송중 ${list.length}건`;
-  root.appendChild(el(`<div class="btn-row" style="justify-content:flex-end;"><button class="btn btn-outline" style="width:auto;padding:8px 16px;" onclick="logout()">로그아웃</button></div>`));
+  root.appendChild(el(`<div class="btn-row" style="justify-content:flex-end;margin-bottom:16px;"><button class="btn btn-outline" style="width:auto;padding:8px 16px;" onclick="logout()">로그아웃</button></div>`));
 
   if (list.length === 0) {
     root.appendChild(el(`<div class="empty-state"><div class="big">🚚</div>현재 배송중인 차량이 없습니다.<br><span style="font-size:11.5px;">고객이 출고를 요청하거나 시공업체가 재배송을 시작하면 여기 나타납니다.</span></div>`));
