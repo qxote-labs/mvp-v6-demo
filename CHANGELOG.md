@@ -1,5 +1,13 @@
 # Changelog
 
+## v6.39 (2026-08-25, 카마스터 평가하기 화면 — 실명 노출 잔여분 수정)
+
+v6.37에서 카마스터 실명 노출을 전수 조사했지만 한 곳을 놓쳤다. `customer.js`의 다른 모든 카마스터 이름 표시는 `karmasterDisplayName()`을 거치는데, 평가하기 화면(`renderRating`)의 제목만 `Store.getKarmaster(targetId).name`을 직접 읽고 있었다 — 고객이 카마스터를 평가하러 들어가면 화면 제목에 실명이 그대로 노출됐다.
+
+**변경**: 해당 한 줄을 `karmasterDisplayName(Store.getKarmaster(targetId))`로 고쳤다 — 시공업체 평가(대상이 실명 정책과 무관한 업체명)는 그대로 둔다.
+
+**영향받은 파일**: `customer.js`(`renderRating` 1줄). 9개 테스트 전부 통과. `customer.js` 안의 다른 모든 `Store.getKarmaster(...)` 호출부를 grep으로 재확인해 이 한 곳 외에는 전부 `karmasterDisplayName()`을 거치고 있음을 확인했다.
+
 ## v6.38 (2026-08-25, 스텝바 — 진행중인 단계가 "도착 전"처럼 보이던 문제 수정)
 
 `renderStatusStepperHTML`/`renderPreReleaseStepperHTML` 둘 다 각 단계로 "들어오는" 연결선의 채움 비율을 `i < idx`(현재 단계보다 앞선 단계만)로 계산하고 있었다. 그 결과 예를 들어 지금 커스터마이징(시공) 중이어도, 그 직전 연결선(탁송→시공)이 채워지지 않아 마치 아직 업체에 도착하지 않은 것처럼 보였다 — "출고---탁송  시공  탁송  도착"처럼 시공 단계가 끊겨 보이는 문제.

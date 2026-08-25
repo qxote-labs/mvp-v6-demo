@@ -1020,7 +1020,7 @@ function renderRating() {
   if (!ratingTarget) return el(`<div class="empty-state">평가할 대상이 없습니다. <button class="btn btn-outline" style="width:auto;margin-top:10px;" onclick="goto('history')">이력으로</button></div>`);
   const { type, targetId, refId } = ratingTarget;
   const dims = Store.ratingDims(type);
-  const targetName = type === 'karmaster' ? Store.getKarmaster(targetId).name : Store.getShop(targetId).name;
+  const targetName = type === 'karmaster' ? karmasterDisplayName(Store.getKarmaster(targetId)) : Store.getShop(targetId).name;
   const wrap = el(`<div style="max-width:520px;">
     <h2>${targetName} 평가하기</h2>
     <div class="sub">평가를 제출하면 포인트가 즉시 적립됩니다. 지금 하지 않아도 나중에 이력에서 평가할 수 있습니다.</div>
