@@ -157,6 +157,18 @@ const DESTINATION_TYPE_OPTIONS = [
 function destinationTypeLabel(t) { const f = DESTINATION_TYPE_OPTIONS.find(o => o.code === t); return f ? f.label : '미정'; }
 function hasCustomizing(r) { return !!(r && r.destinationType === 'AFFILIATED_SHOP'); }
 
+// 새로 생기는 카마스터에게 가입 시점에 바로 붙여줄 기본 닉네임. 이름에서 "카마스터" 접미사를 떼고
+// "매니저"를 붙이는, 씨드 데이터(도현매니저 등)와 같은 스타일이다. 겹치면 숫자를 붙여 피해간다 —
+// isKarmasterNicknameTaken과 같은 정규화(공백 제거·소문자화) 규칙을 쓴다.
+function _autoNickname(karmasters, rawName) {
+  const base = (rawName || '').replace(/\s*카마스터\s*$/, '').trim() || '카마스터';
+  const norm = (s) => (s || '').trim().toLowerCase().replace(/\s+/g, '');
+  const taken = (nick) => karmasters.some(k => norm(k.nickname) === norm(nick));
+  let candidate = `${base}매니저`;
+  let n = 2;
+  while (taken(candidate)) { candidate = `${base}매니저${n}`; n++; }
+  return candidate;
+}
 // ---- 카마스터 표시 이름(닉네임/실명) — user-account-role-model-spec.md 3장/4.2/5장 ----
 // brandsHandled[]는 별도 필드로 저장하지 않고, 그 카마스터가 담당한 계약들의 carBrand에서 매번
 // 계산한다(v1.7 "자동 유추가 기본값" 원칙 — 다만 본인이 수동으로 덮어쓰는 기능까지는 구현하지 않았다).
@@ -674,7 +686,10 @@ const Store = {
     let km = data.karmasters.find(k => k.phone === r.pendingKarmasterPhone && !k.pin);
     if (!km) {
       km = {
-        id: 'k' + Date.now(), name, nickname: '', nameDisplayMode: 'nickname', rating: 0, reviews: 0, groupIds: (groupIds || []).slice(),
+        // 닉네임을 비워두면 브랜드 취급 이력이 현대/기아가 아닌 카마스터는 karmasterDisplayName()이
+        // 실명으로 폴백한다(4.2절 — 그 정책 자체는 의도된 것). 새로 생기는 카마스터마다 매번 닉네임을
+        // 손으로 설정하기 전까지 실명이 새는 걸 막기 위해, 가입 시점에 바로 기본 닉네임을 지어준다.
+        id: 'k' + Date.now(), name, nickname: _autoNickname(data.karmasters, name), nameDisplayMode: 'nickname', rating: 0, reviews: 0, groupIds: (groupIds || []).slice(),
         tags: [], preferredShopId: null, pin: '', phone: r.pendingKarmasterPhone || '', bonusPoint: 0,
       };
       data.karmasters.push(km);
@@ -683,7 +698,9 @@ const Store = {
       karmasterId: km.id, pendingKarmasterPhone: '',
       destinationType, consultMemo: consultMemo || '', karmasterShopName: karmasterShopName || '', stage: '계약등록',
     });
-    updated.log = (updated.log || []).concat([{ t: Date.now(), msg: `미가입 카마스터(${name})가 전화번호+계약번호+조회번호로 본인 확인 후 계약 내용을 승인 — 정식 가입은 아직 하지 않음` }]);
+    // 이 로그는 카마스터 자신뿐 아니라 고객의 "전체 처리 이력"에도 그대로 노출된다 — 다른 로그
+    // 메시지들과 마찬가지로 실명을 넣지 않고 "카마스터"로만 지칭한다(닉네임 정책, 4.2/5장).
+    updated.log = (updated.log || []).concat([{ t: Date.now(), msg: `미가입 카마스터가 전화번호+계약번호+조회번호로 본인 확인 후 계약 내용을 승인 — 정식 가입은 아직 하지 않음` }]);
     data.reservations[idx] = updated;
     // 미가입 상태로 쌓여있던 평판 레코드가 있으면 카마스터로 이관한다 — 레코드 자체는 지우지 않고
     // linkedUserId/linkedAt만 채워 "이관 완료"로 표시한다(4.2절).
@@ -1264,7 +1281,9 @@ function renderPreReleaseStepperHTML(r) {
   if (idx < 0) return '';
   const steps = PRE_RELEASE_STEPS.map((label, i) => {
     const cls = i < idx ? 'done' : (i === idx ? 'cur' : '');
-    const fillPct = i < idx ? 100 : 0;
+    // 현재 단계로 "들어오는" 선(이 dot 앞의 연결선)은 이미 그 단계에 도달했다는 뜻이니 꽉 채운다 —
+    // i < idx만 채우면 지금 막 도달해 진행중인 단계가 마치 "아직 도착 전"처럼 끊겨 보인다.
+    const fillPct = i <= idx ? 100 : 0;
     return `<div class="dstep ${cls}"><div class="dstep-line"><div class="dstep-line-fill" style="width:${fillPct}%"></div></div><div class="dstep-dot">${i + 1}</div><div class="dstep-label">${label}</div></div>`;
   }).join('');
   return `<div class="dstepper">${steps}</div>`;
@@ -1279,7 +1298,9 @@ function renderStatusStepperHTML(r) {
     : ['READY', 'DISPATCHED', 'IN_TRANSIT', 'DELIVERED', 'CONFIRMED'];
   const steps = order.map((code, i) => {
     const cls = i < idx ? 'done' : (i === idx ? 'cur' : '');
-    const fillPct = i < idx ? 100 : 0;
+    // 현재 단계로 들어오는 연결선도 채운다 — 예: 시공중(CUSTOMIZING)이면 그 앞의 탁송 구간까지는 이미
+    // 지나온 것이니, 그 선이 안 채워져 있으면 마치 업체에 아직 도착 전인 것처럼 잘못 보인다.
+    const fillPct = i <= idx ? 100 : 0;
     return `<div class="dstep ${cls}"><div class="dstep-line"><div class="dstep-line-fill" style="width:${fillPct}%"></div></div><div class="dstep-dot">${i + 1}</div><div class="dstep-label">${DELIVERY_STAGE_LABELS[code]}</div></div>`;
   }).join('');
   // 구체적인 지연 사유 문구는 여기서 노출하지 않는다 — 카마스터 화면은 내부 전용 트리거 사유를,

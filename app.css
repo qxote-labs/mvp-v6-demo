@@ -200,7 +200,10 @@ tr.active-row { background: #f3f8fd; }
 .dstep { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
 .dstep-dot { width: 28px; height: 28px; border-radius: 50%; background: #eee; color: #999; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; z-index: 1; }
 .dstep.done .dstep-dot { background: #5a9c2e; color: #fff; }
-.dstep.cur .dstep-dot { background: #185fa5; color: #fff; box-shadow: 0 0 0 4px #e6f1fb; }
+.dstep.cur .dstep-dot { background: #185fa5; color: #fff; box-shadow: 0 0 0 4px #e6f1fb; animation: dstep-pulse 1.6s ease-in-out infinite; }
+/* 현재 단계는 "이미 끝난 단계(done)"와 구분되게 살짝 깜빡여서 지금 진행중이라는 걸 스텝 바만 보고도
+   바로 알 수 있게 한다 — 예: 시공중(CUSTOMIZING)이 도착 전 대기처럼 보이던 문제. */
+@keyframes dstep-pulse { 0%, 100% { box-shadow: 0 0 0 4px #e6f1fb; } 50% { box-shadow: 0 0 0 7px #cfe4f8; } }
 .dstep-label { font-size: 10.5px; color: #888; margin-top: 6px; text-align: center; line-height: 1.4; }
 .dstep.cur .dstep-label { color: #185fa5; font-weight: 700; }
 .dstep.done .dstep-label { color: #5a9c2e; }
