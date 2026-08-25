@@ -1249,6 +1249,26 @@ function deliveryPhaseIndex(r) {
   if (stage === 'IN_TRANSIT' && hasCustom) code = r.transitStage === 'TO_SHOP' ? 'IN_TRANSIT_1' : 'IN_TRANSIT_2';
   return order.indexOf(code);
 }
+// 출고 전(계약확인~출고요청) 단계 스텝 바 — 배송(탁송) 스텝 바(renderStatusStepperHTML)와는 완전히
+// 분리된 별도 컴포넌트다. 앞 단계가 끝나면 그걸로 이 컴포넌트의 역할도 끝이라, IN_TRANSIT 이상으로
+// 넘어간 뒤에는(preReleasePhaseIndex가 -1) 표시하지 않는다 — 두 스텝 바를 하나로 이어붙이지 않는다.
+const PRE_RELEASE_STEPS = ['계약등록', '카마스터 확인', '출고요청'];
+function preReleasePhaseIndex(r) {
+  if (r.stage === '고객요청') return 0;
+  if (r.stage === '계약등록') return 1;
+  if (r.stage === '계약확정') return r.ownerReleaseRequested ? 2 : 1;
+  return -1;
+}
+function renderPreReleaseStepperHTML(r) {
+  const idx = preReleasePhaseIndex(r);
+  if (idx < 0) return '';
+  const steps = PRE_RELEASE_STEPS.map((label, i) => {
+    const cls = i < idx ? 'done' : (i === idx ? 'cur' : '');
+    const fillPct = i < idx ? 100 : 0;
+    return `<div class="dstep ${cls}"><div class="dstep-line"><div class="dstep-line-fill" style="width:${fillPct}%"></div></div><div class="dstep-dot">${i + 1}</div><div class="dstep-label">${label}</div></div>`;
+  }).join('');
+  return `<div class="dstepper">${steps}</div>`;
+}
 // 신차배송조회 상태 스텝 바 — 계약 단계(출고 요청 전)에는 표시하지 않고, IN_TRANSIT 이상부터 보여준다.
 function renderStatusStepperHTML(r) {
   const idx = deliveryPhaseIndex(r);
@@ -1333,13 +1353,33 @@ function renderHistoryLogHTML(entity) {
 const SAMPLE_PALETTES = [
   ['#dbe9f7', '#2f6fa8'], ['#e7f3dd', '#4c7a2a'], ['#fbe8d9', '#b5651d'], ['#f3e2f0', '#8a3f7a'],
 ];
+// 실제 사진 파일을 쓸 수 없는 오프라인 데모라(외부 리소스 로드 불가), 라벨 문맥에 맞는 벡터 아이콘을
+// 직접 그려 넣어 "이게 무슨 사진인지" 최소한의 실감이 나도록 한다 — 사업자등록증은 문서 아이콘, 그 외
+// (현장사진/인수완료사진/검수사진 등 차량·작업 관련)는 차량 실루엣 아이콘을 쓴다. 라벨에 "완료"나
+// "검수"가 들어있으면 체크마크 배지를 얹어 "작업 중"과 "다 끝난 것"을 시각적으로 구분한다.
 function generateSamplePhoto(index, label) {
   const [bg, fg] = SAMPLE_PALETTES[index % SAMPLE_PALETTES.length];
+  const isDoc = label.includes('사업자등록증');
+  const isDone = /완료|검수/.test(label);
+  const icon = isDoc
+    ? `<g transform="translate(130,28)" fill="none" stroke="${fg}" stroke-width="3" opacity="0.55">
+        <rect x="0" y="0" width="60" height="80" rx="4"/>
+        <line x1="12" y1="18" x2="48" y2="18"/>
+        <line x1="12" y1="30" x2="48" y2="30"/>
+        <line x1="12" y1="42" x2="36" y2="42"/>
+        <circle cx="42" cy="60" r="12"/>
+        <path d="M37 60 l4 4 l7 -8" stroke-width="2.5"/>
+      </g>`
+    : `<g transform="translate(95,38)" fill="${fg}" opacity="0.55">
+        <path d="M10 42 Q10 26 28 24 L48 24 Q62 24 72 40 L122 40 Q130 40 130 48 L130 56 Q130 60 126 60 L10 60 Q4 60 4 54 L4 48 Q4 42 10 42 Z"/>
+        <circle cx="34" cy="60" r="11" fill="${bg}" stroke="${fg}" stroke-width="4"/>
+        <circle cx="104" cy="60" r="11" fill="${bg}" stroke="${fg}" stroke-width="4"/>
+      </g>${isDone ? `<g transform="translate(216,30)" stroke="${fg}" stroke-width="4" fill="none" opacity="0.8"><circle cx="18" cy="18" r="17"/><path d="M9 18 l6 7 l13 -15"/></g>` : ''}`;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="220">
     <rect width="320" height="220" fill="${bg}"/>
-    <circle cx="160" cy="90" r="34" fill="${fg}" opacity="0.25"/>
-    <text x="160" y="96" font-family="sans-serif" font-size="15" fill="${fg}" text-anchor="middle" font-weight="bold">${label}</text>
-    <text x="160" y="150" font-family="sans-serif" font-size="11" fill="${fg}" text-anchor="middle" opacity="0.7">샘플 이미지 (데모)</text>
+    ${icon}
+    <text x="160" y="180" font-family="sans-serif" font-size="14" fill="${fg}" text-anchor="middle" font-weight="bold">${label}</text>
+    <text x="160" y="200" font-family="sans-serif" font-size="10" fill="${fg}" text-anchor="middle" opacity="0.7">샘플 이미지 (데모)</text>
   </svg>`;
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }

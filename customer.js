@@ -316,6 +316,10 @@ function renderReleaseBox(r, placeholder) {
   if (r.ownerReleaseRequested) {
     return el(`<div class="hint">출고를 요청하셨습니다${r.deliveryAddress ? ` — 최종 수령지: <b>${r.deliveryAddress}</b>` : ''}. 카마스터가 확인 후 공장에 출고를 의뢰하면 배송이 시작됩니다.</div>`);
   }
+  // 최종 수령지는 CUSTOM_ADDRESS일 때만 실제로 매번 달라진다 — DEALERSHIP/AFFILIATED_SHOP(제휴
+  // 시공소를 거치더라도 최종적으로는 영업소로 돌아온다는 게 현재 기준, 추후 조정 가능)은 "영업소"가
+  // 사실상 정답이라 기본값으로 미리 채워둔다. 그래도 고객이 원하면 언제든 직접 수정할 수 있다.
+  if (!releaseAddrDraft && r.destinationType !== 'CUSTOM_ADDRESS') releaseAddrDraft = '영업소';
   const box = el(`<div>
     <label style="margin-top:12px;">최종 수령지</label>
     <input id="rel-addr" type="text" placeholder="${placeholder}" autocomplete="off">
@@ -346,12 +350,14 @@ function renderDetail() {
         return el(`<div style="max-width:480px;">
           <h2>계약내역이 등록되었습니다</h2>
           <span class="badge wait">카마스터 승인 대기 · ${r.id}</span>
+          ${renderPreReleaseStepperHTML(r)}
           <div class="msg-box"><b>${karmasterDisplayName(km)}</b>님의 화면에 등록하신 계약 내용이 바로 전달되었습니다. 카마스터가 내용을 검토하고 승인하면 다음 단계로 진행됩니다. 별도로 전달하실 내용은 없습니다.</div>
         </div>`);
       }
       const box = el(`<div style="max-width:480px;">
         <h2>계약내역이 등록되었습니다</h2>
         <span class="badge wait">조회번호 전달 대기 · ${r.id}</span>
+        ${renderPreReleaseStepperHTML(r)}
         <div class="msg-box">계약 내용은 이미 등록되어 카마스터가 접속하는 즉시 확인할 수 있습니다. 다만 입력하신 연락처는 아직 이 서비스에 등록되지 않은 카마스터라, 아래 조회번호만은 앱이 대신 전달하지 못합니다 — 문자·전화 등으로 직접 전달해 주세요(실제 서비스에서는 SMS로 자동 발송될 예정입니다). 카마스터가 이 번호로 처음 접속하면 계정이 자동으로 만들어지며 이 계약에 연결됩니다.</div>
         <div id="confirm-code-display" style="font-size:32px;font-weight:800;letter-spacing:6px;text-align:center;padding:22px;background:#f3f8fd;border-radius:10px;border:1.5px dashed #185fa5;">${r.confirmCode}</div>
         <button class="btn btn-outline btn-auto" id="copy-code-btn" style="margin-top:10px;">조회번호 복사하기</button>
@@ -367,6 +373,7 @@ function renderDetail() {
     contract_pending: () => el(`<div>
       <h2>카마스터가 승인한 계약 내용을 확인해 주세요</h2>
       <span class="badge wait">고객 확인 대기 · ${r.id}</span>
+      ${renderPreReleaseStepperHTML(r)}
       <div class="msg-box">${karmasterDisplayName(km)}님이 등록하신 계약 내용을 검토하고 아래와 같이 승인했습니다.<br>
         제조사 계약번호: <b>${r.carBrand || '-'} · ${r.contractNumber || '미입력'}</b><br>
         차량: <b>${r.carModel}</b>${r.trim ? ` · ${r.trim}` : ''}${r.color ? ` · ${r.color}` : ''}${r.contractDate ? `<br>계약일자: ${r.contractDate}` : ''}<br>
@@ -379,6 +386,7 @@ function renderDetail() {
       const box = el(`<div>
         <h2>계약이 확정되었습니다</h2>
         <span class="badge done">계약 확정${hasCustomizing(r) ? ' · 출고 후 시공예정' : ' · 시공 없이 순수 차량 구매'}</span>
+        ${renderPreReleaseStepperHTML(r)}
         <div class="msg-box">
           제조사 계약번호: <b>${r.carBrand || '-'} · ${r.contractNumber || '미입력'}</b><br>
           차량: <b>${r.carModel}</b>${r.trim ? ` · ${r.trim}` : ''}${r.color ? ` · ${r.color}` : ''}${r.contractDate ? `<br>계약일자: ${r.contractDate}` : ''}<br>

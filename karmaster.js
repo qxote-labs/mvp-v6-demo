@@ -247,6 +247,7 @@ function renderUnregisteredApproveForm(r) {
   const d = unregisteredApproveDraft;
   const form = el(`<div class="admin-controls">
     <h4>등록된 계약 내용 (고객 입력)</h4>
+    ${renderPreReleaseStepperHTML(r)}
     <div class="summary-line"><span>고객</span><span>${r.customer.name} (${r.customer.phone})</span></div>
     <div class="summary-line"><span>제조사 계약번호</span><span>${r.carBrand || '-'} · ${r.contractNumber || '미입력'}</span></div>
     <div class="summary-line"><span>차량</span><span>${r.carModel}${r.trim ? ` · ${r.trim}` : ''}${r.color ? ` · ${r.color}` : ''}</span></div>
@@ -507,6 +508,7 @@ function renderApprovalReview(r) {
   const card = el(`<div>
     <h3>${r.customer.name} (${r.customer.nickname || '-'}) · ${r.id}</h3>
     <div class="hint" style="margin-bottom:16px;">연락처: ${r.customer.phone} — 고객이 직접 입력한 정보입니다.</div>
+    ${renderPreReleaseStepperHTML(r)}
     <div class="admin-controls">
       <h4>고객이 등록한 계약 내용</h4>
       <div class="hint" style="margin-bottom:8px;">아래 내용이 실제로 체결하신 계약과 맞는지 확인한 뒤 승인해 주세요.</div>
@@ -558,10 +560,10 @@ function renderCustomerDetail(r) {
   const wrap = el(`<div>
     <h3>${r.customer.name} (${r.customer.nickname || '-'}) · ${r.id}</h3>
     <div class="hint" style="margin-bottom:16px;">연락처: ${r.customer.phone} · 현재 단계: <b>${stageStepLabel(r)}</b></div>
-    <div id="section-stepper">${renderStatusStepperHTML(r)}</div>
+    <div id="section-stepper">${renderPreReleaseStepperHTML(r)}${renderStatusStepperHTML(r)}</div>
+    <div id="section-augmentation"></div>
     <div id="section-contract"></div>
     <div id="section-journey"></div>
-    <div id="section-augmentation"></div>
     <details class="admin-controls" style="margin-top:16px;">
       <summary style="cursor:pointer;font-weight:800;font-size:13px;">실시간 이력 보기 (${(r.log || []).length}건)</summary>
       <div style="margin-top:10px;">${renderHistoryLogHTML(r)}</div>
@@ -638,6 +640,7 @@ function renderCustomerDetail(r) {
     card.querySelector(`#km-exc-open-${r.id}`).addEventListener('click', () => openExceptionBox(r.id));
     card.querySelector(`#km-exc-form-${r.id}`).appendChild(renderExceptionFormSlot(r.id));
     journeyBox.appendChild(card);
+    journeyBox.appendChild(renderPhotoPanel(r, 'customizingPhotos', '커스터마이징 현장 사진', Store.addCustomizingPhoto, Store.withdrawCustomizingPhoto));
   } else if (r.stage === 'DELIVERED') {
     const card = el(`<div class="admin-controls">
       <h4>② 차량 도착 — 확인 필요 (DELIVERED)</h4>
@@ -648,6 +651,7 @@ function renderCustomerDetail(r) {
     const mgrBtn = card.querySelector(`#km-mgr-confirm-${r.id}`);
     if (mgrBtn) mgrBtn.addEventListener('click', () => { Store.confirmManagerReceipt(r.id); render(); });
     journeyBox.appendChild(card);
+    journeyBox.appendChild(renderPhotoPanel(r, 'deliveryPhotos', '인수 완료 사진', Store.addDeliveryPhoto, Store.withdrawDeliveryPhoto));
   } else if (r.stage === 'CONFIRMED') {
     journeyBox.appendChild(el(`<div class="admin-controls"><h4>신차인도서비스 완료 (CONFIRMED)</h4>
       <div class="hint">오너가 차량 수령을 확인했습니다. 이 건에 대한 카마스터의 역할은 여기서 끝납니다.</div>
@@ -657,7 +661,7 @@ function renderCustomerDetail(r) {
     const card = el(`<div class="admin-controls">
       <h4>⚠ 배송 지연/예외 상태 (EXCEPTION)</h4>
       <div class="msg-box" style="border-left-color:#c22;">전환 사유(내부 전용): ${r.exceptionReason || '(미입력)'}</div>
-      <div class="hint">고객 화면에는 이 내용이 아니라, 아래 "배송 보강 정보 입력" 패널에서 지연 사유를 골라 게시해야 노출됩니다.</div>
+      <div class="hint">고객 화면에는 이 내용이 아니라, 위쪽 "배송 상세정보 입력" 패널에서 지연 사유를 골라 게시해야 노출됩니다.</div>
       <button class="btn btn-primary btn-sm" id="km-exc-clear-${r.id}" style="margin-top:8px;">정상 운행으로 복귀</button>
     </div>`);
     card.querySelector(`#km-exc-clear-${r.id}`).addEventListener('click', () => { Store.clearException(r.id); render(); });
@@ -688,68 +692,67 @@ function renderAugmentationPanel(r) {
   const d = getAugmentDraft(r);
   const showCustomizing = r.stage === 'CUSTOMIZING' && hasCustomizing(r);
   const showException = r.stage === 'EXCEPTION';
-  const showDeliveryPhotos = r.stage === 'DELIVERED';
-
-  const card = el(`<div class="admin-controls">
-    <h4>배송 보강 정보 입력 (Layer 2 — 매니저)</h4>
-    <div class="hint" style="margin-bottom:10px;">저장은 초안 상태로만 남고, [게시하기]를 눌러야 고객 화면에 반영됩니다. 기사 정보·특이사항 메모는 게시 대상이 아니라 항상 내부 전용입니다.</div>
-    <label>기사 성명 (내부 전용, 고객 비노출)</label>
-    <input id="aug-driver-name-${r.id}" type="text" placeholder="예: 최기사" autocomplete="off">
-    <label>기사 연락처 (내부 전용, 고객 비노출)</label>
-    <input id="aug-driver-phone-${r.id}" type="tel" placeholder="010-0000-0000" autocomplete="off">
-    <label style="margin-top:12px;">도착 예정 시각 (ETA)</label>
-    <input id="aug-eta-${r.id}" type="datetime-local">
-    <label>위치 보정 코멘트</label>
-    <input id="aug-loc-${r.id}" type="text" placeholder="예: 현재 언양 휴게소 부근 통과" autocomplete="off">
-    ${showCustomizing ? `
-    <label style="margin-top:12px;">커스터마이징 공정 현황</label>
-    <textarea id="aug-custprog-${r.id}" rows="2" placeholder="예: 1일차 틴팅 완료, 2일차 PPF 작업 중"></textarea>` : ''}
-    ${showException ? `
-    <label style="margin-top:12px;">지연 사유 (고객 노출용)</label>
-    <select id="aug-delay-code-${r.id}">
-      <option value="">선택 안 함</option>
-      ${DELAY_REASON_OPTIONS.map(o => `<option value="${o.code}">${o.label}</option>`).join('')}
-    </select>
-    <textarea id="aug-delay-note-${r.id}" rows="2" placeholder="지연 사유 상세 메모 (고객 노출용 완곡 표현 권장)"></textarea>` : ''}
-    <label style="margin-top:12px;">특이사항 메모 (내부 전용, 고객 비노출)</label>
-    <textarea id="aug-memo-${r.id}" rows="2" placeholder="CS 근거용 메모"></textarea>
-    <div class="btn-row" style="margin-top:10px;">
-      <button class="btn btn-outline btn-sm" id="aug-save-${r.id}">초안 저장</button>
-      <button class="btn btn-primary btn-sm" id="aug-publish-${r.id}">게시하기</button>
+  // 기사정보/ETA/위치코멘트는 "커스터마이징"이나 "예외" 같은 특정 단계 얘기가 아니라 이 예약의
+  // 배송/진행 전반에 대한 보강 정보다 — 그래서 스텝 바로 밑, 카드 하나에 다 모아둔다. [게시하기]가
+  // 정확히 이 카드 안의 내용 전부(공정현황·지연사유 포함)를 함께 게시한다는 게 한눈에 보이도록,
+  // 필드와 저장/게시 버튼을 같은 카드 안에 둔다. 사진은 이 카드가 아니라 각 단계별 작업 카드
+  // (renderCustomerDetail의 #section-journey) 쪽에 붙는다 — 게시 게이트 없이 즉시 반영되는 별개
+  // 메커니즘이라, 초안·게시 흐름과 섞으면 오히려 헷갈린다.
+  const detailsEl = el(`<details class="admin-controls" style="margin-top:0;">
+    <summary style="cursor:pointer;font-weight:800;font-size:13px;">배송 상세정보 입력 (선택)</summary>
+    <div style="margin-top:10px;">
+      <div class="hint" style="margin-bottom:10px;">여기 입력한 내용은 초안 상태로만 남고, [게시하기]를 눌러야 고객 화면에 반영됩니다. 기사 정보·특이사항 메모는 게시 대상이 아니라 항상 내부 전용입니다.</div>
+      <label>기사 성명 (내부 전용, 고객 비노출)</label>
+      <input id="aug-driver-name-${r.id}" type="text" placeholder="예: 최기사" autocomplete="off">
+      <label>기사 연락처 (내부 전용, 고객 비노출)</label>
+      <input id="aug-driver-phone-${r.id}" type="tel" placeholder="010-0000-0000" autocomplete="off">
+      <label style="margin-top:12px;">도착 예정 시각 (ETA)</label>
+      <input id="aug-eta-${r.id}" type="datetime-local">
+      <label>위치 보정 코멘트</label>
+      <input id="aug-loc-${r.id}" type="text" placeholder="예: 현재 언양 휴게소 부근 통과" autocomplete="off">
+      ${showCustomizing ? `
+      <label style="margin-top:12px;">커스터마이징 공정 현황</label>
+      <textarea id="aug-custprog-${r.id}" rows="2" placeholder="예: 1일차 틴팅 완료, 2일차 PPF 작업 중"></textarea>` : ''}
+      ${showException ? `
+      <label style="margin-top:12px;">지연 사유 (고객 노출용)</label>
+      <select id="aug-delay-code-${r.id}">
+        <option value="">선택 안 함</option>
+        ${DELAY_REASON_OPTIONS.map(o => `<option value="${o.code}">${o.label}</option>`).join('')}
+      </select>
+      <textarea id="aug-delay-note-${r.id}" rows="2" placeholder="지연 사유 상세 메모 (고객 노출용 완곡 표현 권장)" style="margin-top:8px;"></textarea>` : ''}
+      <label style="margin-top:12px;">특이사항 메모 (내부 전용, 고객 비노출)</label>
+      <textarea id="aug-memo-${r.id}" rows="2" placeholder="CS 근거용 메모"></textarea>
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="btn btn-outline btn-sm" id="aug-save-${r.id}">초안 저장</button>
+        <button class="btn btn-primary btn-sm" id="aug-publish-${r.id}">게시하기</button>
+      </div>
+      <div class="hint" style="margin-top:6px;">${aug.published.publishedAt ? `마지막 게시: ${fmtTime(aug.published.publishedAt)}` : '아직 게시된 내용이 없습니다.'}</div>
     </div>
-    <div class="hint" style="margin-top:6px;">${aug.published.publishedAt ? `마지막 게시: ${fmtTime(aug.published.publishedAt)}` : '아직 게시된 내용이 없습니다.'}</div>
-  </div>`);
-
-  const nameEl = card.querySelector(`#aug-driver-name-${r.id}`), phoneEl = card.querySelector(`#aug-driver-phone-${r.id}`);
-  const etaEl = card.querySelector(`#aug-eta-${r.id}`), locEl = card.querySelector(`#aug-loc-${r.id}`);
-  const memoEl = card.querySelector(`#aug-memo-${r.id}`);
+  </details>`);
+  const nameEl = detailsEl.querySelector(`#aug-driver-name-${r.id}`), phoneEl = detailsEl.querySelector(`#aug-driver-phone-${r.id}`);
+  const etaEl = detailsEl.querySelector(`#aug-eta-${r.id}`), locEl = detailsEl.querySelector(`#aug-loc-${r.id}`);
+  const memoEl = detailsEl.querySelector(`#aug-memo-${r.id}`);
   nameEl.value = d.driverName; phoneEl.value = d.driverPhone; etaEl.value = d.eta; locEl.value = d.locationNote; memoEl.value = d.internalMemo;
   nameEl.addEventListener('input', () => { d.driverName = nameEl.value; });
   phoneEl.addEventListener('input', () => { d.driverPhone = phoneEl.value; });
   etaEl.addEventListener('input', () => { d.eta = etaEl.value; });
   locEl.addEventListener('input', () => { d.locationNote = locEl.value; });
   memoEl.addEventListener('input', () => { d.internalMemo = memoEl.value; });
-
   if (showCustomizing) {
-    const custProgEl = card.querySelector(`#aug-custprog-${r.id}`);
+    const custProgEl = detailsEl.querySelector(`#aug-custprog-${r.id}`);
     custProgEl.value = d.customizingProgress;
     custProgEl.addEventListener('input', () => { d.customizingProgress = custProgEl.value; });
   }
   if (showException) {
-    const delayCodeEl = card.querySelector(`#aug-delay-code-${r.id}`), delayNoteEl = card.querySelector(`#aug-delay-note-${r.id}`);
+    const delayCodeEl = detailsEl.querySelector(`#aug-delay-code-${r.id}`), delayNoteEl = detailsEl.querySelector(`#aug-delay-note-${r.id}`);
     delayCodeEl.value = d.delayReasonCode; delayNoteEl.value = d.delayReasonNote;
     delayCodeEl.addEventListener('change', () => { d.delayReasonCode = delayCodeEl.value; });
     delayNoteEl.addEventListener('input', () => { d.delayReasonNote = delayNoteEl.value; });
   }
+  detailsEl.querySelector(`#aug-save-${r.id}`).addEventListener('click', () => { Store.saveAugmentationDraft(r.id, d); render(); });
+  detailsEl.querySelector(`#aug-publish-${r.id}`).addEventListener('click', () => { Store.publishAugmentation(r.id, d); render(); });
 
-  card.querySelector(`#aug-save-${r.id}`).addEventListener('click', () => { Store.saveAugmentationDraft(r.id, d); render(); });
-  card.querySelector(`#aug-publish-${r.id}`).addEventListener('click', () => { Store.publishAugmentation(r.id, d); render(); });
-
-  const wrap = el(`<div></div>`);
-  wrap.appendChild(card);
-  if (showDeliveryPhotos) wrap.appendChild(renderPhotoPanel(r, 'deliveryPhotos', '인수 완료 사진', Store.addDeliveryPhoto, Store.withdrawDeliveryPhoto));
-  if (showCustomizing) wrap.appendChild(renderPhotoPanel(r, 'customizingPhotos', '커스터마이징 현장 사진', Store.addCustomizingPhoto, Store.withdrawCustomizingPhoto));
-  return wrap;
+  return detailsEl;
 }
 
 // 인수 완료 사진 / 커스터마이징 현장 사진 공용 업로드 패널 — 텍스트 필드와 달리 게시 게이트 없이 업로드
