@@ -580,7 +580,10 @@ function renderDetail() {
     careBox.querySelector('#care-cross-view').addEventListener('click', () => { careActiveId = careOrders[0].id; goto('care_detail'); });
   }
   slot.appendChild(careBox);
-  const back = el(`<div style="margin-top:24px;"><button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('history')">신차인도서비스 목록으로</button></div>`);
+  const back = el(`<div class="btn-row" style="margin-top:24px;justify-content:flex-start;">
+    <button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('landing')">처음으로</button>
+    <button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('history')">신차인도서비스 목록으로</button>
+  </div>`);
   wrap.appendChild(back);
   return wrap;
 }
@@ -1064,7 +1067,10 @@ function renderCareDetail() {
   const slot = wrap.querySelector('#phase-slot');
   slot.appendChild((renderers[phase] || renderers['care_requested'])());
   slot.appendChild(el(`<div class="admin-controls" style="margin-top:24px;"><h4>전체 처리 이력</h4>${renderHistoryLogHTML(c)}</div>`));
-  const back = el(`<div style="margin-top:24px;"><button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('care')">신차 케어 서비스 목록으로</button></div>`);
+  const back = el(`<div class="btn-row" style="margin-top:24px;justify-content:flex-start;">
+    <button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('landing')">처음으로</button>
+    <button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('care')">신차 케어 서비스 목록으로</button>
+  </div>`);
   wrap.appendChild(back);
   return wrap;
 }
