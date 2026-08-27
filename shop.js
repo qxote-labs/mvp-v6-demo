@@ -282,15 +282,26 @@ function renderShopCard(c) {
     slot.appendChild(flowBox);
 
     if (c.status === '작업중') {
+      // 잘못 올린 사진을 고쳐 올리는 방법이 없어 항의를 받았던 부분 — 카마스터 쪽 인수완료/커스터마이징
+      // 사진과 같은 원칙(store.js withdrawCarePhoto, service-spec.md 3.2절 예외 원칙)을 그대로 따라
+      // "회수(내리기)"만 가능하게 한다. 회수된 사진은 3장 상한에서 빠지고, 고객 화면에도 안 보인다.
       const photos = c.photos || [];
+      const live = photos.map((p, i) => ({ p, i })).filter(x => !x.p.withdrawn);
+      const withdrawnCount = photos.length - live.length;
       const box = el(`<div class="admin-controls">
-        <h4>현장 사진 업로드 (${photos.length}/3장)</h4>
-        <div class="photo-row" style="margin-bottom:14px;">${photos.map(p => `<img src="${p.src}" style="flex:1;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;">`).join('') || '<div class="hint">아직 등록된 사진이 없습니다</div>'}</div>
+        <h4>현장 사진 업로드 (${live.length}/3장)</h4>
+        <div class="photo-row" style="margin-bottom:14px;">${live.length
+          ? live.map(({ p, i }) => `<div style="flex:1;"><img src="${p.src}" style="width:100%;height:90px;object-fit:cover;border-radius:8px;border:1px solid #ddd;"><button class="btn btn-sm" data-widx="${i}" style="margin-top:4px;width:100%;">회수(내리기)</button></div>`).join('')
+          : '<div class="hint">아직 등록된 사진이 없습니다</div>'}</div>
         <div class="btn-row" style="margin-top:0;">
-          <button class="btn btn-sm" id="photo-sample-${c.id}" ${photos.length >= 3 ? 'disabled' : ''}>샘플 이미지 추가</button>
-          <label class="btn btn-sm" style="cursor:pointer;${photos.length >= 3 ? 'opacity:0.4;pointer-events:none;' : ''}">파일 선택 업로드<input type="file" id="photo-file-${c.id}" accept="image/*" style="display:none;"></label>
+          <button class="btn btn-sm" id="photo-sample-${c.id}" ${live.length >= 3 ? 'disabled' : ''}>샘플 이미지 추가</button>
+          <label class="btn btn-sm" style="cursor:pointer;${live.length >= 3 ? 'opacity:0.4;pointer-events:none;' : ''}">파일 선택 업로드<input type="file" id="photo-file-${c.id}" accept="image/*" style="display:none;"></label>
         </div>
+        ${withdrawnCount ? `<div class="hint" style="margin-top:8px;">회수된 사진 ${withdrawnCount}장 (고객 화면에는 노출되지 않음)</div>` : ''}
       </div>`);
+      box.querySelectorAll('button[data-widx]').forEach(btn => {
+        btn.addEventListener('click', () => { Store.withdrawCarePhoto(c.id, parseInt(btn.getAttribute('data-widx'), 10)); render(); });
+      });
       box.querySelector(`#photo-sample-${c.id}`).addEventListener('click', () => { Store.addCareSamplePhoto(c.id, generateSamplePhoto); render(); });
       const fileInput = box.querySelector(`#photo-file-${c.id}`);
       fileInput.addEventListener('change', () => {

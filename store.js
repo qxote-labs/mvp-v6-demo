@@ -1235,17 +1235,28 @@ const Store = {
     const c = this.getCareOrder(id);
     if (!c) return c;
     const photos = (c.photos || []).slice();
-    if (photos.length >= 3) return c;
-    photos.push({ src: generateFn(photos.length, `현장 사진 ${photos.length + 1}`), label: `샘플 사진 ${photos.length + 1}` });
+    if (photos.filter(p => !p.withdrawn).length >= 3) return c;
+    photos.push({ src: generateFn(photos.length, `현장 사진 ${photos.length + 1}`), label: `샘플 사진 ${photos.length + 1}`, withdrawn: false });
     return this._updateCare(id, { photos }, `샘플 이미지 추가 (${photos.length}번째)`);
   },
   addCareUploadedPhoto(id, dataUrl, filename) {
     const c = this.getCareOrder(id);
     if (!c) return c;
     const photos = (c.photos || []).slice();
-    if (photos.length >= 3) return c;
-    photos.push({ src: dataUrl, label: filename || `업로드 사진 ${photos.length + 1}` });
+    if (photos.filter(p => !p.withdrawn).length >= 3) return c;
+    photos.push({ src: dataUrl, label: filename || `업로드 사진 ${photos.length + 1}`, withdrawn: false });
     return this._updateCare(id, { photos }, `실제 파일 업로드: ${filename} (${photos.length}번째)`);
+  },
+  // 카마스터 쪽 인수완료/커스터마이징 사진(_withdrawPhoto)과 같은 원칙 — 잘못 올린 사진을 고쳐 올리는
+  // 게 아니라, 소프트 삭제(withdrawn:true) + 이력 로그로 "회수"만 가능하게 한다. 3장 상한 계산에서도
+  // 빠지므로 회수 후 그 자리에 다시 올릴 수 있다.
+  withdrawCarePhoto(id, idx) {
+    const c = this.getCareOrder(id);
+    if (!c) return c;
+    const photos = (c.photos || []).slice();
+    if (!photos[idx] || photos[idx].withdrawn) return c;
+    photos[idx] = Object.assign({}, photos[idx], { withdrawn: true });
+    return this._updateCare(id, { photos }, `현장 사진 회수: ${photos[idx].label}`);
   },
   // 견적가(사전 확정)에 추가금액·작업내역을 더해 한 번에 청구액을 확정한다.
   setCareCharged(id, extra, note) {
@@ -1517,7 +1528,7 @@ function renderShopTimelineHTML(c) {
       <div class="tl-name ${i > idx ? 'pending' : ''}">${s.title}</div>
       <div class="tl-desc">${i <= idx ? s.info : ''}</div></div>`;
   }).join('');
-  const photoList = c.photos || [];
+  const photoList = (c.photos || []).filter(p => !p.withdrawn);
   const photos = photoList.length > 0
     ? `<div class="photo-row">${photoList.map(p => `<img src="${p.src}" alt="${p.label}" style="flex:1;height:100px;object-fit:cover;border-radius:8px;border:1px solid #ddd;">`).join('')}</div>`
     : `<div class="hint">아직 업로드된 사진이 없습니다.</div>`;
