@@ -235,8 +235,95 @@ function _emptyAugmentation() {
   };
 }
 
+// 데모/스토리보드 편의용 시드 예약 — 매번 계약등록→승인→확정을 손으로 밟지 않아도 "이미 진행 중인
+// 사례"를 곧바로 열어볼 수 있도록 기가입 고객 2명의 예약을 미리 심어둔다. id를 10-202601-9xxx 대역에
+// 고정해, seq로 자동 채번되는 실제 예약(10-YYYYMM-0001…)과 절대 겹치지 않게 한다.
+const DEFAULT_RESERVATIONS = [
+  {
+    id: '10-202601-9001',
+    createdAt: Date.now() - 6 * 86400000,
+    stage: 'CONFIRMED', // 이미 인도 완료 — 신차 케어 서비스를 곧바로 시연할 수 있는 "내 차량"이 된다
+    confirmCode: '910001',
+    karmasterId: 'k1', pendingKarmasterPhone: '',
+    customer: { name: '김민준', phone: '010-7777-1000', nickname: '' },
+    carModel: '아반떼 하이브리드', carBrand: '현대', contractNumber: 'HD-2026-1001', trim: '인스퍼레이션', color: '화이트', contractDate: '2026-08-15',
+    destinationType: 'DEALERSHIP', consultMemo: '', karmasterShopName: '',
+    ownerReleaseRequested: true, deliveryAddress: '영업소',
+    transit: null, transitStage: 'NONE',
+    isManagerConfirmed: true, isCustomerApproved: true,
+    deliveredAt: Date.now() - 2 * 86400000,
+    inspectionResult: 'ok', inspectionNote: '', customerPhotos: [], signature: null,
+    exceptionReason: '', exceptionPrevStage: null, exceptionPausedAt: null,
+    augmentation: _emptyAugmentation(),
+    karmasterRated: false, karmasterPointsEarned: 0,
+    messages: [{ from: 'customer', text: '계약 내용을 확인하고 승인해 주세요. (자동 안내)', t: Date.now() - 6 * 86400000 }],
+    karmasterUnread: false,
+    log: [
+      { t: Date.now() - 6 * 86400000, msg: '고객이 계약내역을 등록했습니다 — 카마스터 승인 대기' },
+      { t: Date.now() - 5 * 86400000, msg: '카마스터가 계약 내용을 검토하고 승인했습니다 — 차종: 아반떼 하이브리드, 목적지 유형: 영업소 직행' },
+      { t: Date.now() - 5 * 86400000, msg: '고객이 계약 내용을 확인했습니다' },
+      { t: Date.now() - 3 * 86400000, msg: '도착 완료 — 영업소 (DELIVERED)' },
+      { t: Date.now() - 2 * 86400000, msg: '카마스터가 개인수령확인을 완료했습니다' },
+      { t: Date.now() - 2 * 86400000, msg: '고객이 최종 인수를 승인했습니다 — 신차인도서비스 완료 (CONFIRMED)' },
+    ],
+  },
+  {
+    id: '10-202601-9002',
+    createdAt: Date.now() - 3 * 86400000,
+    stage: 'CUSTOMIZING', // 진행중인 사례 — 스텝바 펄스·배송 상세정보 패널을 곧바로 확인할 수 있다
+    confirmCode: '910002',
+    karmasterId: 'k2', pendingKarmasterPhone: '',
+    customer: { name: '이서연', phone: '010-7777-2000', nickname: '' },
+    carModel: '쏘렌토 하이브리드', carBrand: '기아', contractNumber: 'KIA-2026-2002', trim: '시그니처', color: '그레이', contractDate: '2026-08-20',
+    destinationType: 'AFFILIATED_SHOP', consultMemo: '', karmasterShopName: '울산오토라운지',
+    ownerReleaseRequested: true, deliveryAddress: '영업소',
+    transit: null, transitStage: 'NONE',
+    isManagerConfirmed: false, isCustomerApproved: false,
+    deliveredAt: null, inspectionResult: null, inspectionNote: '', customerPhotos: [], signature: null,
+    exceptionReason: '', exceptionPrevStage: null, exceptionPausedAt: null,
+    augmentation: Object.assign(_emptyAugmentation(), {
+      draft: { driverName: '최기사', driverPhone: '010-4444-5501', eta: '', locationNote: '', delayReasonCode: '', delayReasonNote: '', customizingProgress: '1일차 틴팅 완료, 2일차 PPF 작업 중', internalMemo: '' },
+      published: { eta: '', locationNote: '', delayReasonCode: '', delayReasonNote: '', customizingProgress: '1일차 틴팅 완료, 2일차 PPF 작업 중', publishedAt: Date.now() - 86400000 },
+    }),
+    karmasterRated: false, karmasterPointsEarned: 0,
+    messages: [{ from: 'customer', text: '계약 내용을 확인하고 승인해 주세요. (자동 안내)', t: Date.now() - 3 * 86400000 }],
+    karmasterUnread: false,
+    log: [
+      { t: Date.now() - 3 * 86400000, msg: '고객이 계약내역을 등록했습니다 — 카마스터 승인 대기' },
+      { t: Date.now() - 3 * 86400000, msg: '카마스터가 계약 내용을 검토하고 승인했습니다 — 차종: 쏘렌토 하이브리드, 목적지 유형: 제휴 시공소 경유(커스터마이징)' },
+      { t: Date.now() - 2 * 86400000, msg: '고객이 계약 내용을 확인했습니다' },
+      { t: Date.now() - 1 * 86400000, msg: '차량이 지정업체(울산오토라운지)에 도착했습니다 — 카마스터의 시공완료 확인 대기 (CUSTOMIZING)' },
+    ],
+  },
+];
+
+// 데모용 시드 신차 케어 서비스 주문 — 위 시드 예약 중 이미 인도 완료된 건(10-202601-9001)에 연결해,
+// "작업중" 상태를 곧바로 보여준다. id도 20-202601-9xxx 대역에 고정해 careSeq 자동 채번과 안 겹친다.
+const DEFAULT_CARE_ORDERS = [
+  {
+    id: '20-202601-9001', reservationId: '10-202601-9001',
+    customer: { name: '김민준', phone: '010-7777-1000', nickname: '' },
+    carModel: '아반떼 하이브리드', trim: '인스퍼레이션', color: '화이트',
+    createdAt: Date.now() - 86400000,
+    shopId: 'a', mode: 'online',
+    package: PACKAGES.find(p => p.id === 'standard'),
+    options: [OPTION_CATALOG.find(o => o.id === 'blackbox')],
+    customRequest: '',
+    quotedPrice: 1730000, status: '작업중', ownerConfirmed: false,
+    pointsUsed: 0, chargedPrice: null, chargeNote: '', priceMatch: null,
+    disputed: false, disputeReason: '', shopRated: false, shopPointsEarned: 0,
+    photos: [], transit: null,
+    log: [
+      { t: Date.now() - 86400000, msg: '신차 케어 서비스 신청 — 시공사: 울산 A샵 (온라인 즉시견적) · 대상 차량: 아반떼 하이브리드 (10-202601-9001)' },
+      { t: Date.now() - 86400000, msg: '시공사 견적 회신 — 1,730,000원' },
+      { t: Date.now() - 82800000, msg: '고객이 견적 확인 — 신차 케어 서비스 계약 완료' },
+      { t: Date.now() - 43200000, msg: '시공 상태 변경 → 작업중' },
+    ],
+  },
+];
+
 function _emptyStore() {
-  return { reservations: [], careOrders: [], shops: DEFAULT_SHOPS, karmasters: DEFAULT_KARMASTERS, drivers: DEFAULT_DRIVERS, groups: DEFAULT_GROUPS, admins: DEFAULT_ADMINS, seq: 0, careSeq: 0, pointWallets: {}, ratings: [], users: [], unclaimedKarmasters: [] };
+  return { reservations: DEFAULT_RESERVATIONS.slice(), careOrders: DEFAULT_CARE_ORDERS.slice(), shops: DEFAULT_SHOPS, karmasters: DEFAULT_KARMASTERS, drivers: DEFAULT_DRIVERS, groups: DEFAULT_GROUPS, admins: DEFAULT_ADMINS, seq: 0, careSeq: 0, pointWallets: {}, ratings: [], users: [], unclaimedKarmasters: [] };
 }
 
 const Store = {
@@ -542,6 +629,14 @@ const Store = {
   },
   getReservationsByKarmaster(kid) { return this.getReservations().filter(r => r.karmasterId === kid); },
   getReservation(id) { return this.load().reservations.find(r => r.id === id) || null; },
+  // 구매자 데모 로그인용 고정 목록 — DEFAULT_RESERVATIONS의 기가입 고객 2명을 그대로 노출한다.
+  // 실제 예약이 새로 쌓여도 이 목록 자체는 흔들리지 않는, 다른 4개 역할과 같은 성격의 "빠른 로그인"이다.
+  getDemoCustomers() {
+    return [
+      { name: '김민준', phone: '010-7777-1000', note: '인도 완료 · 신차 케어 서비스 진행중' },
+      { name: '이서연', phone: '010-7777-2000', note: '커스터마이징 진행중' },
+    ];
+  },
 
   _update(id, patch, logMsg) {
     const data = this.load();

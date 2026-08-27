@@ -76,14 +76,30 @@ function _renderInner() {
 
 // ===================== 로그인 (데모 화면 예시) =====================
 function renderLoginMock() {
-  return el(`<div style="max-width:400px;margin:60px auto;text-align:center;">
+  const wrap = el(`<div style="max-width:400px;margin:60px auto;text-align:center;">
     <h2 style="font-size:22px;">구매자 로그인</h2>
     <div class="sub" style="margin-bottom:20px;">실제 서비스에서는 본인인증을 거쳐 로그인합니다. 데모에서는 아래 정보로 바로 진행되며, 입력한 이름·연락처는 계약내역 등록 시 자동으로 채워집니다.</div>
     <input id="login-name" type="text" placeholder="이름 (홍길동)" value="${loggedInName}" style="margin-bottom:10px;" autocomplete="off">
     <input id="login-phone" type="tel" placeholder="010-1234-5678" value="${loggedInPhone}" style="margin-bottom:10px;" autocomplete="off">
     <input type="password" placeholder="비밀번호 (추후 지원 예정)" disabled style="margin-bottom:14px;">
     <button class="btn btn-primary" style="width:100%;" onclick="tryCustomerLogin()">간편 로그인</button>
+    <div style="margin-top:28px;padding-top:16px;border-top:1px solid #ddd;text-align:left;">
+      <label style="font-size:11.5px;color:#888;">데모 계정으로 빠른 로그인 (비밀번호 불필요)</label>
+      <select id="quick-login-customer" style="margin-top:6px;">
+        <option value="">계정 선택…</option>
+        ${Store.getDemoCustomers().map(c => `<option value="${c.phone}" data-name="${c.name}">${c.name} · ${c.note}</option>`).join('')}
+      </select>
+      <div class="hint" style="margin-top:4px;">이미 계약 이력이 있는 기가입 고객으로, 매 단계를 처음부터 밟지 않고도 바로 이어지는 화면을 확인할 수 있습니다. 신규 가입 테스트는 위 입력창에 새 이름·연락처를 직접 적으면 됩니다.</div>
+    </div>
   </div>`);
+  wrap.querySelector('#quick-login-customer').addEventListener('change', (e) => {
+    const opt = e.target.selectedOptions[0];
+    if (!opt || !opt.value) return;
+    document.getElementById('login-name').value = opt.dataset.name;
+    document.getElementById('login-phone').value = opt.value;
+    tryCustomerLogin();
+  });
+  return wrap;
 }
 function formatPhoneDigits(raw) {
   const digits = (raw || '').replace(/[^0-9]/g, '').slice(0, 11);

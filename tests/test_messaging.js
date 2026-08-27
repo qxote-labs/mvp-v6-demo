@@ -39,10 +39,12 @@ const { chromium } = require('playwright');
 
     // 카마스터 화면: 목록·상세가 항상 함께 보이는 구조 — 선택 전에는 "신규" 배지가 보여야 하고,
     // (재)선택하면 읽음 처리되어야 함
+    // 시드 데이터(김민준, 이서연)로 이미 담당 고객이 있는 상태라 이 테스트가 만든 행("메시지테스트")을
+    // 콕 집어 확인해야 한다 — table tr.clickable 전체를 그냥 쓰면 strict mode violation이 난다.
     await karmaster.waitForSelector('table tr.clickable');
-    const unreadBadgeBefore = await karmaster.locator('table tr.clickable').innerText();
+    const unreadBadgeBefore = await karmaster.locator('table tr.clickable', { hasText: '메시지테스트' }).innerText();
     console.log('2-1) 선택 전 목록에 안읽음 표시(🔔 신규) 포함 여부:', unreadBadgeBefore.includes('신규'));
-    await karmaster.click('table tr.clickable >> nth=0');
+    await karmaster.locator('table tr.clickable', { hasText: '메시지테스트' }).click();
     await karmaster.waitForSelector('text=상담 시간을 조금 앞당길 수 있을까요?', { timeout: 3000 });
     console.log('3) 카마스터: 고객 선택 후 메시지 수신 확인');
 

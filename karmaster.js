@@ -9,6 +9,7 @@
 let loggedInId = sessionStorage.getItem('v6_km_id') || null;
 let selectedId = sessionStorage.getItem('v6_km_sel') || null;
 let kmSearchQuery = '';
+let kmNewContractDraft = { name: '', phone: '', carModel: '', carBrand: '', contractNumber: '', destinationType: null };
 let newPasswordNotice = null; // 정식 가입 직후 1회 안내할 로그인 비밀번호 — 배너를 닫거나 로그아웃하면 지운다
 // 비가입자(미등록 카마스터) 흐름 상태 — 정식 로그인(loggedInId)과 완전히 별개다.
 let unregisteredMode = null; // null | 'login' | 'recover'
@@ -348,6 +349,66 @@ function stageStepLabel(r) {
   return map[r.stage] || r.stage;
 }
 
+// ===================== 새 고객 계약 대리 등록 =====================
+// 관리자의 "계약 대리 등록"(admin.js)과 같은 Store.createContractRecordDirect를 그대로 쓰지만, 담당
+// 카마스터를 고르는 절차가 없다 — 이 화면을 보고 있는 카마스터 본인으로 고정된다. 본인이 이미 검토를
+// 마치고 입력하는 것이므로 고객의 최초 입력 단계만 건너뛸 뿐, 뒤이은 "고객 확인"은 그대로 남는다
+// (createContractRecordDirect가 만드는 예약은 이미 '계약등록' 단계에서 시작 — 카마스터 승인 단계 자체가
+// 없다). 연락처를 입력하는 즉시 이 번호로 예약 이력이 있는 재방문 고객인지, 처음 온 고객인지 실시간으로
+// 알려준다.
+function renderKmNewContractForm(km) {
+  const d = kmNewContractDraft;
+  const wrap = el(`<div>
+    <div class="hint" style="margin-bottom:10px;">고객이 아직 앱을 열기 전이더라도, 오프라인에서 체결한 계약 내용을 카마스터가 대신 입력해둘 수 있습니다. 등록 즉시 아래 연락처로 고객이 확인할 수 있는 상태가 됩니다.</div>
+    <label>고객 실명</label><input id="km-nc-name" type="text" placeholder="홍길동" autocomplete="off">
+    <label>고객 연락처</label><input id="km-nc-phone" type="tel" placeholder="010-1234-5678" autocomplete="off">
+    <div class="hint" id="km-nc-phone-status"></div>
+    <label>확정 차종</label><input id="km-nc-car" type="text" placeholder="예: 쏘렌토 하이브리드" autocomplete="off">
+    <label>제조사</label>
+    <select id="km-nc-brand">
+      <option value="">선택 안 함</option>
+      <option value="현대">현대</option>
+      <option value="기아">기아</option>
+      <option value="기타">기타</option>
+    </select>
+    <label>제조사 계약번호</label><input id="km-nc-contract-no" type="text" placeholder="계약서에 적힌 실제 계약번호" autocomplete="off">
+    <label style="margin-top:8px;">목적지 유형</label>
+    <div class="btn-row" style="margin-top:0;">${destinationTypeButtonsHTML('km-nc-dest')}</div>
+    <div class="hint" id="km-nc-dest-status"></div>
+    <button class="btn btn-primary btn-auto" id="km-nc-submit" style="margin-top:14px;" disabled>계약 등록하기</button>
+  </div>`);
+  const nameEl = wrap.querySelector('#km-nc-name'), phoneEl = wrap.querySelector('#km-nc-phone'), carEl = wrap.querySelector('#km-nc-car');
+  const brandEl = wrap.querySelector('#km-nc-brand'), contractNoEl = wrap.querySelector('#km-nc-contract-no');
+  const phoneStatusEl = wrap.querySelector('#km-nc-phone-status'), destStatusEl = wrap.querySelector('#km-nc-dest-status'), submitBtn = wrap.querySelector('#km-nc-submit');
+  nameEl.value = d.name; phoneEl.value = d.phone; carEl.value = d.carModel; brandEl.value = d.carBrand; contractNoEl.value = d.contractNumber;
+  function refreshPhoneStatus() {
+    const prior = d.phone.trim() ? Store.getReservationsByPhone(d.phone) : [];
+    if (!d.phone.trim()) { phoneStatusEl.textContent = ''; return; }
+    phoneStatusEl.textContent = prior.length > 0
+      ? `기존 고객입니다 — 이전 계약 이력 ${prior.length}건`
+      : '처음 등록하는 신규 고객입니다.';
+  }
+  function refreshDestStatus() { destStatusEl.textContent = d.destinationType ? destinationTypeLabel(d.destinationType) : '선택되지 않음'; }
+  function validate() { submitBtn.disabled = !(d.name.trim().length >= 2 && /^010-?\d{3,4}-?\d{4}$/.test(d.phone) && d.carModel.trim().length >= 2 && d.carBrand && d.contractNumber.trim() && d.destinationType !== null); }
+  refreshPhoneStatus(); refreshDestStatus(); validate();
+  nameEl.addEventListener('input', () => { d.name = nameEl.value; validate(); });
+  phoneEl.addEventListener('input', () => { d.phone = phoneEl.value; refreshPhoneStatus(); validate(); });
+  carEl.addEventListener('input', () => { d.carModel = carEl.value; validate(); });
+  brandEl.addEventListener('change', () => { d.carBrand = brandEl.value; validate(); });
+  contractNoEl.addEventListener('input', () => { d.contractNumber = contractNoEl.value; validate(); });
+  wireDestinationTypeButtons(wrap, 'km-nc-dest', '', (code) => { d.destinationType = code; refreshDestStatus(); validate(); });
+  submitBtn.addEventListener('click', () => {
+    const r = Store.createContractRecordDirect({
+      karmasterId: km.id,
+      customer: { name: d.name.trim(), phone: d.phone, nickname: '' },
+      carModel: d.carModel.trim(), carBrand: d.carBrand, contractNumber: d.contractNumber.trim(), destinationType: d.destinationType,
+    });
+    kmNewContractDraft = { name: '', phone: '', carModel: '', carBrand: '', contractNumber: '', destinationType: null };
+    selectReservation(r.id);
+  });
+  return wrap;
+}
+
 // ===================== 표시 이름 설정 (닉네임/실명) — user-account-role-model-spec.md 3장/4.2/5장 =====================
 // 현대/기아 소속(brandAffiliationFor === 'hyundai_kia')이면 표시 방식 토글 자체를 숨기고 닉네임으로
 // 강제한다 — 제조사 정책상 그 브랜드를 취급하는 카마스터의 실명이 고객 화면에 노출되면 안 되기 때문이다.
@@ -448,11 +509,16 @@ function renderDashboard(km) {
     </div>
     <div class="split"><div class="side" id="km-list"></div><div class="main" id="km-detail"></div></div>
     <details style="margin-top:20px;">
+      <summary style="cursor:pointer;font-weight:800;font-size:13px;">+ 새 고객 계약 등록 (고객 대신 입력)</summary>
+      <div id="km-newcontract-slot" style="margin-top:10px;"></div>
+    </details>
+    <details style="margin-top:12px;">
       <summary style="cursor:pointer;font-weight:800;font-size:13px;">표시 이름 설정 (닉네임/실명)</summary>
       <div id="km-displayname-slot" style="margin-top:10px;"></div>
     </details>
   </div>`);
 
+  wrap.querySelector('#km-newcontract-slot').appendChild(renderKmNewContractForm(km));
   wrap.querySelector('#km-displayname-slot').appendChild(renderDisplayNameSettings(km));
 
   const listBox = wrap.querySelector('#km-list');
