@@ -20,6 +20,7 @@ const { chromium } = require('playwright');
     await customer.fill('#login-name', '홍길동');
     await customer.fill('#login-phone', '01011112222'); // "내 차량"(신차 케어 서비스 진입)이 이 로그인 번호로 조회된다
     await customer.click('#login-submit');
+    await customer.click('text=신차인도서비스');
     await customer.click('text=계약내역 등록하기');
     await customer.waitForSelector('#rq-km-phone', { timeout: 3000 });
     await customer.fill('#rq-km-phone', '01022223301'); // 김도현 카마스터 연락처 (등록됨)
@@ -97,8 +98,8 @@ const { chromium } = require('playwright');
     await customer.click('text=신차 케어 서비스 목록으로');
     await customer.waitForSelector('text=← 처음으로', { timeout: 3000 });
     await customer.click('text=← 처음으로');
-    await customer.waitForSelector('text=내 계약 확인 / 이력 조회', { timeout: 3000 });
-    await customer.click('text=내 계약 확인 / 이력 조회');
+    await customer.waitForSelector('text=신차인도서비스', { timeout: 3000 });
+    await customer.click('text=신차인도서비스');
     // 로그인 연락처로 자동 조회되므로 별도 검색 없이 바로 목록이 뜬다.
     await customer.waitForSelector('table tr.clickable', { timeout: 3000 });
     await customer.click('table tr.clickable >> nth=0');
@@ -220,8 +221,8 @@ const { chromium } = require('playwright');
     // 서비스 목록으로 돌아가므로, 신차인도서비스 이력으로 다시 직접 이동해야 한다.
     await customer.waitForSelector('text=← 처음으로', { timeout: 3000 });
     await customer.click('text=← 처음으로');
-    await customer.waitForSelector('text=내 계약 확인 / 이력 조회', { timeout: 3000 });
-    await customer.click('text=내 계약 확인 / 이력 조회');
+    await customer.waitForSelector('text=신차인도서비스', { timeout: 3000 });
+    await customer.click('text=신차인도서비스');
     // 로그인 연락처로 자동 조회되므로 별도 검색 없이 바로 목록이 뜬다.
     await customer.waitForSelector('table tr.clickable', { timeout: 3000 });
     await customer.click('table tr.clickable >> nth=0');

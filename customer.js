@@ -50,7 +50,7 @@ function _renderInner() {
     return;
   }
   const map = {
-    landing: renderLanding, karmasters: renderKarmasterSearch, request: renderRequest, detail: renderDetail, history: renderHistory, rate: renderRating,
+    landing: renderLanding, overview: renderOverview, karmasters: renderKarmasterSearch, request: renderRequest, detail: renderDetail, history: renderHistory, rate: renderRating,
     care: renderCare, care_setup: renderCareSetup, care_detail: renderCareDetail,
   };
   let headerText = '';
@@ -135,20 +135,62 @@ function tryCustomerLogin() {
 // 신차인도서비스의 메인 동작은 "계약내역 등록"과 "계약 확인/이력조회" 두 가지다. "카마스터 찾기"는
 // 계약과 무관하게 평판만 미리 확인하고 싶은 사람을 위한 부차 기능이라, 여기 상단 버튼줄에서는 빼고
 // 아래쪽에 작은 링크로만 남긴다(계약내역 등록 폼 안에도 카마스터 연락처 입력 근처에 같은 링크가 있다).
+// 두 서비스는 완전히 독립이라, 랜딩도 같은 레벨의 대칭 버튼 2개로만 구성한다 — "계약내역 등록하기"
+// "내 계약 확인" 처럼 신차인도서비스만 따로 쪼갠 버튼을 별도로 두지 않는다(신차 케어 서비스 쪽엔
+// 그런 분리가 없었으니 대칭이 안 맞았다). 각 버튼은 그 서비스의 "홈"(목록+등록/신청)으로 바로
+// 들어가며, 두 서비스를 한 번에 보고 싶을 때만 쓰는 "전체 진행 현황"은 두 버튼보다 눈에 덜 띄는
+// 보조 링크로 아래에 작게 둔다.
 function renderLanding() {
-  return el(`<div style="max-width:640px;margin:40px auto;text-align:center;">
-    <h2 style="font-size:24px;">신차인도서비스</h2>
-    <div class="sub">카마스터를 찾아 직접 연락해 상담·계약을 진행하세요. 계약이 끝나면 그 내용을 직접 등록해 주세요. 이후 과정은 이 앱에서 실시간으로 확인할 수 있습니다.</div>
-    <div style="display:flex;gap:14px;margin-top:30px;flex-wrap:wrap;">
-      <button class="btn btn-primary" style="width:auto;flex:1;" onclick="goto('request')">계약내역 등록하기</button>
-      <button class="btn btn-outline" style="width:auto;flex:1;" onclick="goto('history')">내 계약 확인 / 이력 조회</button>
-    </div>
-    <div style="margin-top:14px;"><a href="javascript:void(0)" onclick="goto('karmasters')" style="font-size:12.5px;color:#888;">계약과 무관하게 카마스터 평판만 확인하기 →</a></div>
-    <hr style="margin:32px 0;border:none;border-top:1px solid #ddd;">
-    <h2 style="font-size:24px;">신차 케어 서비스</h2>
-    <div class="sub">신차인도서비스와는 시간적으로 완전히 분리된 별개 서비스입니다 — 출고 전이든, 이미 받은 차든 상관없이 시공·정비가 필요할 때 언제든 이용하세요.</div>
-    <button class="btn btn-primary" style="width:100%;margin-top:16px;" onclick="goto('care')">신차 케어 서비스</button>
+  return el(`<div style="max-width:480px;margin:60px auto;text-align:center;">
+    <button class="btn btn-primary" style="width:100%;padding:22px;font-size:16px;" onclick="goto('history')">신차인도서비스</button>
+    <div class="sub" style="margin:8px 0 0;">카마스터와 상담한 계약을 등록하고 실시간으로 확인하세요</div>
+    <button class="btn btn-primary" style="width:100%;padding:22px;font-size:16px;margin-top:24px;" onclick="goto('care')">신차 케어 서비스</button>
+    <div class="sub" style="margin:8px 0 0;">시공·정비가 필요할 때 언제든 신청하고 확인하세요</div>
+    <div style="margin-top:26px;"><a href="javascript:void(0)" onclick="goto('overview')" style="font-size:12.5px;color:#888;">전체 진행 현황 한눈에 보기 →</a></div>
   </div>`);
+}
+
+// 신차인도서비스·신차 케어 서비스를 한 화면에 나란히(구분은 확실히) 보여주는 순수 조회 전용 화면 —
+// 두 버튼 중 하나를 골라 들어가는 주 동선과 달리, "둘 다 한 번에 확인하고 싶을 때"만 쓰는 보조
+// 화면이다. 그래서 등록/신청 버튼은 여기 두지 않는다 — 그 액션은 각 서비스의 홈 화면 몫이다.
+function renderOverview() {
+  const reservations = loggedInPhone ? Store.getReservationsByPhone(loggedInPhone) : [];
+  const careOrders = loggedInPhone ? Store.getCareOrdersByPhone(loggedInPhone) : [];
+  const wrap = el(`<div>
+    <h2>전체 진행 현황</h2>
+    <h3 style="margin-top:20px;">🚘 신차인도서비스</h3>
+    <div id="ov-reservations"></div>
+    <h3 style="margin-top:28px;">🔧 신차 케어 서비스</h3>
+    <div id="ov-care"></div>
+    <div style="margin-top:24px;"><button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('landing')">← 처음으로</button></div>
+  </div>`);
+  const resBox = wrap.querySelector('#ov-reservations');
+  if (reservations.length === 0) {
+    resBox.appendChild(el(`<div class="hint">아직 등록된 계약이 없습니다.</div>`));
+  } else {
+    const table = el(`<table><tr><th>접수번호</th><th>차종</th><th>카마스터</th><th>단계</th></tr></table>`);
+    reservations.forEach(r => {
+      const km = Store.getKarmaster(r.karmasterId);
+      const tr = elRow(`<tr class="clickable"><td>${r.id}</td><td>${r.carModel || '-'}</td><td>${km ? karmasterDisplayName(km) : '-'}</td><td><span class="badge ${stageBadgeClass(r.stage)}">${stageDisplayLabel(r.stage)}</span></td></tr>`);
+      tr.addEventListener('click', () => { activeId = r.id; releaseAddrDraft = ''; goto('detail'); });
+      table.appendChild(tr);
+    });
+    resBox.appendChild(table);
+  }
+  const careBox = wrap.querySelector('#ov-care');
+  if (careOrders.length === 0) {
+    careBox.appendChild(el(`<div class="hint">아직 신청 내역이 없습니다.</div>`));
+  } else {
+    const table = el(`<table><tr><th>계약번호</th><th>차종</th><th>시공사</th><th>상태</th></tr></table>`);
+    careOrders.forEach(c => {
+      const shop = Store.getShop(c.shopId);
+      const tr = elRow(`<tr class="clickable"><td>${c.id}</td><td>${c.carModel || '-'}</td><td>${shop ? shop.name : '-'}</td><td><span class="badge ${amBadgeClass(c.status)}">${c.status}</span></td></tr>`);
+      tr.addEventListener('click', () => { careActiveId = c.id; goto('care_detail'); });
+      table.appendChild(tr);
+    });
+    careBox.appendChild(table);
+  }
+  return wrap;
 }
 
 // ===================== 카마스터 검색 (평점 기반, 순수 정보 제공용 — 여기서 바로 연결하지 않는다) =====================
@@ -732,25 +774,36 @@ function doConfirmContract() { Store.confirmContractByCustomer(activeId); render
 function renderCare() {
   const myCars = loggedInPhone ? Store.getReservationsByPhone(loggedInPhone) : [];
   const list = loggedInPhone ? Store.getCareOrdersByPhone(loggedInPhone) : [];
+  // 이전엔 "새로 신청하기"가 신청 내역 유무와 무관하게 항상 위에 크게 있었다 — 재방문 고객이
+  // 상태만 확인하러 들어올 때마다 매번 큰 CTA부터 보게 되는 게 불편하다는 지적을 반영해, 신청
+  // 내역이 있으면 목록을 먼저 보여주고 "+ 새로 신청"은 작은 보조 버튼으로 옮겼다. 큰 CTA는
+  // 신청 내역이 진짜 하나도 없을 때만 남긴다.
   const wrap = el(`<div>
-    <h2>신차 케어 서비스</h2>
-    <div class="sub">신차인도서비스와 시간적으로 완전히 분리된 독립 서비스입니다. 내 차량 중 하나를 골라 시공사를 검색·선택하고 견적을 요청하세요.</div>
-    ${myCars.length === 0
-      ? `<div class="hint">아직 등록된 내 차량이 없습니다. 먼저 "계약내역 등록하기"로 신차인도서비스 계약을 등록해야 신청할 수 있습니다.</div>`
-      : `<button class="btn btn-primary btn-auto" id="care-new">새로 신청하기</button>`}
-    <h3 style="margin-top:24px;">내 신청 내역</h3>
+    <div class="btn-row" style="justify-content:space-between;align-items:center;">
+      <h2 style="margin:0;">신차 케어 서비스</h2>
+      ${(list.length > 0 && myCars.length > 0) ? `<button class="btn btn-outline btn-sm" style="width:auto;" id="care-new-sm">+ 새로 신청</button>` : ''}
+    </div>
+    <div class="sub">신차인도서비스와 시간적으로 완전히 분리된 독립 서비스입니다.</div>
     <div id="care-list"></div>
     <div style="margin-top:20px;"><button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('landing')">← 처음으로</button></div>
   </div>`);
-  const newBtn = wrap.querySelector('#care-new');
-  if (newBtn) newBtn.addEventListener('click', () => {
-    careSetupReservationId = myCars.length === 1 ? myCars[0].id : null;
-    goto('care_setup');
-  });
+  const startCareSetup = () => { careSetupReservationId = myCars.length === 1 ? myCars[0].id : null; goto('care_setup'); };
+  const newSmBtn = wrap.querySelector('#care-new-sm');
+  if (newSmBtn) newSmBtn.addEventListener('click', startCareSetup);
   const listBox = wrap.querySelector('#care-list');
   if (list.length === 0) {
-    listBox.appendChild(el(`<div class="hint">아직 신청한 신차 케어 서비스가 없습니다.</div>`));
+    if (myCars.length === 0) {
+      const empty = el(`<div class="empty-state"><div class="big">📭</div>아직 등록된 내 차량이 없습니다.<br>먼저 신차인도서비스 계약을 등록해야 신청할 수 있습니다.
+        <div style="margin-top:14px;"><button class="btn btn-outline" style="width:auto;padding:10px 20px;" id="care-empty-goto-reservation">신차인도서비스로 이동</button></div></div>`);
+      listBox.appendChild(empty);
+      empty.querySelector('#care-empty-goto-reservation').addEventListener('click', () => goto('history'));
+    } else {
+      const empty = el(`<div class="empty-state"><div class="big">📭</div>아직 신청한 신차 케어 서비스가 없습니다.<br><button class="btn btn-primary" style="width:auto;margin-top:14px;padding:10px 20px;" id="care-empty-new">새로 신청하기</button></div>`);
+      listBox.appendChild(empty);
+      empty.querySelector('#care-empty-new').addEventListener('click', startCareSetup);
+    }
   } else {
+    listBox.appendChild(el(`<h3 style="margin-top:4px;">내 신청 내역</h3>`));
     const table = el(`<table><tr><th>계약번호</th><th>차종</th><th>시공사</th><th>상태</th><th>평가</th></tr></table>`);
     list.forEach(c => {
       const shop = Store.getShop(c.shopId);
@@ -1097,7 +1150,10 @@ function renderRating() {
 function renderHistory() {
   const list = Store.getReservationsByPhone(loggedInPhone);
   const wrap = el(`<div>
-    <h2>내 계약 확인 / 이력 조회</h2>
+    <div class="btn-row" style="justify-content:space-between;align-items:center;">
+      <h2 style="margin:0;">신차인도서비스</h2>
+      ${list.length > 0 ? `<button class="btn btn-outline btn-sm" style="width:auto;" id="hist-new-sm">+ 새 계약 등록</button>` : ''}
+    </div>
     <div class="sub" style="margin-bottom:14px;">로그인하신 연락처(${loggedInPhone})로 등록된 계약입니다.</div>
     <div id="hist-filter-row" style="display:${list.length > 1 ? 'flex' : 'none'};max-width:420px;margin-bottom:24px;">
       <input id="hist-filter" type="text" placeholder="접수번호·제조사 계약번호·카마스터 이름·차종으로 좁혀보기" autocomplete="off">
@@ -1105,6 +1161,8 @@ function renderHistory() {
     <div id="hist-results"></div>
   </div>`);
   const resultsBox = wrap.querySelector('#hist-results'), filterInput = wrap.querySelector('#hist-filter');
+  const newSmBtn = wrap.querySelector('#hist-new-sm');
+  if (newSmBtn) newSmBtn.addEventListener('click', () => goto('request'));
 
   // 필터 입력은 이 안에서만 결과 테이블을 다시 그린다(전체 화면 render()를 타지 않음) — 그래야
   // 검색 중에 필터 입력창 자신이 포커스를 잃지 않는다.
@@ -1132,15 +1190,24 @@ function renderHistory() {
   }
 
   if (list.length === 0) {
-    const empty = el(`<div class="empty-state"><div class="big">📭</div>아직 등록된 계약이 없습니다.<br><button class="btn btn-primary" style="width:auto;margin-top:14px;padding:10px 20px;" id="hist-empty-register">계약내역 등록하기</button></div>`);
+    const empty = el(`<div class="empty-state"><div class="big">📭</div>아직 등록된 계약이 없습니다.<br>
+      <button class="btn btn-primary" style="width:auto;margin-top:14px;padding:10px 20px;" id="hist-empty-register">계약내역 등록하기</button></div>`);
     resultsBox.appendChild(empty);
     empty.querySelector('#hist-empty-register').addEventListener('click', () => goto('request'));
   } else {
     filterInput.addEventListener('input', renderTable);
     renderTable();
   }
-  const backBtn = el(`<div style="margin-top:20px;"><button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('landing')">← 처음으로</button></div>`);
-  wrap.appendChild(backBtn);
+  // 카마스터 평판 링크는 계약이 있든 없든 언제나 쓸모가 있다 — 아직 못 정한 첫 방문자뿐 아니라,
+  // 이미 계약이 있는 사람도 지금 담당 카마스터의 평판을 확인하고 싶을 수 있다. 다만 목록 위쪽에
+  // 두면 "지금 진행 상황 확인"이라는 이 화면의 주된 목적과 경쟁하게 되니, 눈에 덜 띄게 맨 아래
+  // 작은 링크로만 둔다.
+  const bottomBar = el(`<div style="margin-top:20px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+    <button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('landing')">← 처음으로</button>
+    <a href="javascript:void(0)" id="hist-karmasters-link" style="font-size:12.5px;color:#888;">카마스터 평판 확인하기 →</a>
+  </div>`);
+  bottomBar.querySelector('#hist-karmasters-link').addEventListener('click', () => goto('karmasters'));
+  wrap.appendChild(bottomBar);
   return wrap;
 }
 

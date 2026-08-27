@@ -10,6 +10,7 @@ const { chromium } = require('playwright');
   await page.fill('#login-name', '입력테스트');
   await page.fill('#login-phone', '01000000001');
   await page.click('#login-submit');
+  await page.click('text=신차인도서비스');
   await page.click('text=계약내역 등록하기');
   await page.waitForSelector('#rq-name');
   // 로그인 시점에 채운 이름이 계약내역 등록 폼의 이름 필드에도 그대로 넘어와 있으므로(자동 채움),

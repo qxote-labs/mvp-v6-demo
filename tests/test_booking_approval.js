@@ -20,6 +20,7 @@ const { chromium } = require('playwright');
     await customerA.fill('#login-name', '고객A');
     await customerA.fill('#login-phone', '01011110000');
     await customerA.click('#login-submit');
+    await customerA.click('text=신차인도서비스');
     await customerA.click('text=계약내역 등록하기');
     await customerA.waitForSelector('#rq-km-phone', { timeout: 3000 });
     await customerA.fill('#rq-km-phone', '01022223301'); // 김도현 카마스터 연락처
@@ -39,6 +40,7 @@ const { chromium } = require('playwright');
     await customerB.fill('#login-name', '고객B');
     await customerB.fill('#login-phone', '01022220000');
     await customerB.click('#login-submit');
+    await customerB.click('text=신차인도서비스');
     await customerB.click('text=계약내역 등록하기');
     await customerB.waitForSelector('#rq-km-phone', { timeout: 3000 });
     await customerB.fill('#rq-km-phone', '01022223301'); // 김도현 카마스터 연락처
