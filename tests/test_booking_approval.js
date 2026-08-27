@@ -79,9 +79,9 @@ const { chromium } = require('playwright');
     console.log('6) 고객A: 계약 확인 완료');
 
     // 고객 B는 카마스터가 아직 승인하지 않았으므로 "고객요청" 상태 그대로여야 한다 (A 승인이 B에 영향 없음)
+    // 이제 이 화면은 로그인 연락처로 자동 조회되므로 별도 검색 없이 바로 목록이 뜬다.
     await customerB.click('text=내 계약 확인으로');
-    await customerB.fill('#hist-phone', '01022220000');
-    await customerB.click('#hist-search');
+    await customerB.waitForSelector('table tr.clickable', { timeout: 3000 });
     const stillWaitingBadge = await customerB.locator('table tr.clickable >> nth=0').innerText();
     console.log('7) 고객B는 아직 승인 전 상태 유지 여부(고객요청이어야 함):', stillWaitingBadge.includes('고객요청'));
 

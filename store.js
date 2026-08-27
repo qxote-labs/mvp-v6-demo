@@ -268,6 +268,38 @@ const DEFAULT_RESERVATIONS = [
     ],
   },
   {
+    // 김민준의 두 번째(더 오래된) 완료 이력 — "내 계약 확인"이 단건이 아니라 진짜 이력 목록(복수건)을
+    // 보여주는 모습도 데모로 바로 확인할 수 있게 한다. 카마스터 평가까지 이미 끝낸 상태로 둬서, 위
+    // 예약(평가 대기중)과 상태 차이도 보여준다.
+    id: '10-202510-9003',
+    createdAt: Date.now() - 130 * 86400000,
+    stage: 'CONFIRMED',
+    confirmCode: '910003',
+    karmasterId: 'k3', pendingKarmasterPhone: '',
+    customer: { name: '김민준', phone: '010-7777-1000', nickname: '' },
+    carModel: '쏘나타', carBrand: '현대', contractNumber: 'HD-2025-5001', trim: '', color: '펄 화이트', contractDate: '2025-11-01',
+    destinationType: 'DEALERSHIP', consultMemo: '', karmasterShopName: '',
+    ownerReleaseRequested: true, deliveryAddress: '영업소',
+    transit: null, transitStage: 'NONE',
+    isManagerConfirmed: true, isCustomerApproved: true,
+    deliveredAt: Date.now() - 125 * 86400000,
+    inspectionResult: 'ok', inspectionNote: '', customerPhotos: [], signature: null,
+    exceptionReason: '', exceptionPrevStage: null, exceptionPausedAt: null,
+    augmentation: _emptyAugmentation(),
+    karmasterRated: true, karmasterPointsEarned: 20000,
+    messages: [],
+    karmasterUnread: false,
+    log: [
+      { t: Date.now() - 130 * 86400000, msg: '고객이 계약내역을 등록했습니다 — 카마스터 승인 대기' },
+      { t: Date.now() - 129 * 86400000, msg: '카마스터가 계약 내용을 검토하고 승인했습니다 — 차종: 쏘나타, 목적지 유형: 영업소 직행' },
+      { t: Date.now() - 129 * 86400000, msg: '고객이 계약 내용을 확인했습니다' },
+      { t: Date.now() - 126 * 86400000, msg: '도착 완료 — 영업소 (DELIVERED)' },
+      { t: Date.now() - 125 * 86400000, msg: '카마스터가 개인수령확인을 완료했습니다' },
+      { t: Date.now() - 125 * 86400000, msg: '고객이 최종 인수를 승인했습니다 — 신차인도서비스 완료 (CONFIRMED)' },
+      { t: Date.now() - 124 * 86400000, msg: '고객이 카마스터를 평가했습니다 — 포인트 20,000P 적립' },
+    ],
+  },
+  {
     id: '10-202601-9002',
     createdAt: Date.now() - 3 * 86400000,
     stage: 'CUSTOMIZING', // 진행중인 사례 — 스텝바 펄스·배송 상세정보 패널을 곧바로 확인할 수 있다
@@ -338,6 +370,11 @@ const Store = {
     this._cache = raw ? JSON.parse(raw) : _emptyStore();
     if (!this._cache.reservations) this._cache.reservations = [];
     if (!this._cache.careOrders) this._cache.careOrders = [];
+    // 시드 예약/케어 주문(v6.40)은 _emptyStore()를 거칠 때(=localStorage가 완전히 비어있을 때)만
+    // 들어간다 — 이 앱을 이미 써봐서 localStorage에 예전 데이터가 남아있는 브라우저에서는 raw가
+    // 있으므로 절대 채워지지 않는다. 어느 쪽이든 항상 보이도록, 없으면 여기서 멱등하게 끼워넣는다.
+    DEFAULT_RESERVATIONS.forEach(seed => { if (!this._cache.reservations.some(r => r.id === seed.id)) this._cache.reservations.push(seed); });
+    DEFAULT_CARE_ORDERS.forEach(seed => { if (!this._cache.careOrders.some(c => c.id === seed.id)) this._cache.careOrders.push(seed); });
     if (!this._cache.shops) this._cache.shops = DEFAULT_SHOPS;
     if (!this._cache.karmasters) this._cache.karmasters = DEFAULT_KARMASTERS;
     if (!this._cache.drivers) this._cache.drivers = DEFAULT_DRIVERS;

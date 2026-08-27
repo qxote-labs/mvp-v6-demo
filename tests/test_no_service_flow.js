@@ -85,9 +85,7 @@ const { chromium } = require('playwright');
 
     await customer.click('text=카마스터 평가하고 포인트 받기');
     await customer.click('#rating-submit');
-    await customer.waitForSelector('#hist-phone', { timeout: 3000 });
-    await customer.fill('#hist-phone', '01033334444');
-    await customer.click('#hist-search');
+    // 평가 제출 후 "내 계약 확인"으로 자동 이동하며, 로그인 연락처로 자동 조회되므로 별도 검색이 필요 없다.
     await customer.waitForSelector('table tr.clickable', { timeout: 3000 });
     await customer.click('table tr.clickable >> nth=0');
     await customer.waitForSelector('text=카마스터 평가 완료', { timeout: 3000 });

@@ -99,9 +99,7 @@ const { chromium } = require('playwright');
     await customer.click('text=← 처음으로');
     await customer.waitForSelector('text=내 계약 확인 / 이력 조회', { timeout: 3000 });
     await customer.click('text=내 계약 확인 / 이력 조회');
-    await customer.waitForSelector('#hist-phone', { timeout: 3000 });
-    await customer.fill('#hist-phone', '01011112222');
-    await customer.click('#hist-search');
+    // 로그인 연락처로 자동 조회되므로 별도 검색 없이 바로 목록이 뜬다.
     await customer.waitForSelector('table tr.clickable', { timeout: 3000 });
     await customer.click('table tr.clickable >> nth=0');
     console.log('7-0) 고객: 이력에서 신차인도서비스 계약을 다시 찾아 진입 (신차 케어 서비스와는 별개 화면임을 확인)');
@@ -224,9 +222,7 @@ const { chromium } = require('playwright');
     await customer.click('text=← 처음으로');
     await customer.waitForSelector('text=내 계약 확인 / 이력 조회', { timeout: 3000 });
     await customer.click('text=내 계약 확인 / 이력 조회');
-    await customer.waitForSelector('#hist-phone', { timeout: 3000 });
-    await customer.fill('#hist-phone', '01011112222');
-    await customer.click('#hist-search');
+    // 로그인 연락처로 자동 조회되므로 별도 검색 없이 바로 목록이 뜬다.
     await customer.waitForSelector('table tr.clickable', { timeout: 3000 });
     await customer.click('table tr.clickable >> nth=0');
     await customer.waitForSelector('text=카마스터 평가하고 포인트 받기', { timeout: 3000 });

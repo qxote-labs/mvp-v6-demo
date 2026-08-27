@@ -1077,14 +1077,19 @@ function renderRating() {
 }
 
 // ===================== 내 계약 확인 / 이력 (신차인도서비스) =====================
+// 이 화면은 이미 로그인(loggedInCustomer)해야만 들어올 수 있으므로 loggedInPhone은 항상 채워져
+// 있다 — "누구 연락처로 조회할지" 매번 다시 물을 이유가 없다. 기본은 본인 연락처로 곧장 목록을
+// 보여주고, 가족 등 다른 번호를 대신 확인해야 하는 드문 경우에만 "다른 연락처로 조회하기"를 눌러
+// 검색창을 펼친다.
+let historyShowAltSearch = false;
 function renderHistory() {
-  // 로그인 시점에 이미 알고 있는 연락처를 여기서 또 입력하게 하지 않는다 — 아직 이 화면에서 검색한
-  // 적이 없으면(historyPhone 미설정) 로그인 연락처로 기본값을 채워, 곧바로 본인 계약 목록이 보이게
-  // 한다. 가족 등 다른 번호로 조회하고 싶으면 그대로 다시 입력하면 되고, 그 값은 계속 기억된다.
-  if (!historyPhone && loggedInPhone) historyPhone = loggedInPhone;
+  if (!historyShowAltSearch) historyPhone = loggedInPhone;
   const wrap = el(`<div>
     <h2>내 계약 확인 / 이력 조회</h2>
-    <div style="display:flex;gap:10px;max-width:420px;margin-bottom:14px;">
+    <div class="sub" style="margin-bottom:10px;">로그인하신 연락처(${loggedInPhone})로 등록된 계약입니다.
+      <a href="javascript:void(0)" id="hist-alt-toggle" style="margin-left:6px;">${historyShowAltSearch ? '내 연락처로 보기' : '다른 연락처로 조회하기'}</a>
+    </div>
+    <div id="hist-search-row" style="display:${historyShowAltSearch ? 'flex' : 'none'};gap:10px;max-width:420px;margin-bottom:14px;">
       <input id="hist-phone" type="tel" placeholder="010-1234-5678" value="${historyPhone}" autocomplete="off">
       <button class="btn btn-primary btn-auto" id="hist-search">조회</button>
     </div>
@@ -1093,6 +1098,11 @@ function renderHistory() {
     </div>
     <div id="hist-results"></div>
   </div>`);
+  wrap.querySelector('#hist-alt-toggle').addEventListener('click', () => {
+    historyShowAltSearch = !historyShowAltSearch;
+    historyPhone = historyShowAltSearch ? '' : loggedInPhone;
+    render();
+  });
   const input = wrap.querySelector('#hist-phone'), btn = wrap.querySelector('#hist-search'), resultsBox = wrap.querySelector('#hist-results');
   const filterRow = wrap.querySelector('#hist-filter-row'), filterInput = wrap.querySelector('#hist-filter');
   let currentList = [];
@@ -1129,7 +1139,12 @@ function renderHistory() {
     if (!historyPhone) { filterRow.style.display = 'none'; return; }
     if (currentList.length === 0) {
       filterRow.style.display = 'none';
-      resultsBox.appendChild(el(`<div class="empty-state"><div class="big">📭</div>해당 번호로 등록된 계약이 없습니다. 카마스터가 계약을 등록하면 여기 나타납니다.</div>`));
+      const empty = historyShowAltSearch
+        ? el(`<div class="empty-state"><div class="big">📭</div>해당 번호로 등록된 계약이 없습니다.</div>`)
+        : el(`<div class="empty-state"><div class="big">📭</div>아직 등록된 계약이 없습니다.<br><button class="btn btn-primary" style="width:auto;margin-top:14px;padding:10px 20px;" id="hist-empty-register">계약내역 등록하기</button></div>`);
+      resultsBox.appendChild(empty);
+      const registerBtn = empty.querySelector('#hist-empty-register');
+      if (registerBtn) registerBtn.addEventListener('click', () => goto('request'));
       return;
     }
     // 계약이 여러 건일 때만 검색창을 보여준다 — 한 건뿐이면 굳이 필요 없다.
