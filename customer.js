@@ -1078,6 +1078,10 @@ function renderRating() {
 
 // ===================== 내 계약 확인 / 이력 (신차인도서비스) =====================
 function renderHistory() {
+  // 로그인 시점에 이미 알고 있는 연락처를 여기서 또 입력하게 하지 않는다 — 아직 이 화면에서 검색한
+  // 적이 없으면(historyPhone 미설정) 로그인 연락처로 기본값을 채워, 곧바로 본인 계약 목록이 보이게
+  // 한다. 가족 등 다른 번호로 조회하고 싶으면 그대로 다시 입력하면 되고, 그 값은 계속 기억된다.
+  if (!historyPhone && loggedInPhone) historyPhone = loggedInPhone;
   const wrap = el(`<div>
     <h2>내 계약 확인 / 이력 조회</h2>
     <div style="display:flex;gap:10px;max-width:420px;margin-bottom:14px;">
