@@ -50,7 +50,8 @@ const { chromium } = require('playwright');
     console.log('3) 카마스터: 차량정보 검토 후 승인, 상담 메모 기록');
 
     await customer.waitForSelector('text=계약 내용 확인 →', { timeout: 3000 });
-    const contractText = await customer.locator('.msg-box').innerText();
+    // 차종·상담메모는 이제 항상 보이는 "계약 내용" 요약 카드(.admin-controls, 페이지 맨 앞)에 있다.
+    const contractText = await customer.locator('.admin-controls').first().innerText();
     console.log('4) 고객 화면에 표시된 계약 내용:\n' + contractText);
 
     const reviewOk = reviewText.includes('팰리세이드') && reviewText.includes('캘리그래피') && reviewText.includes('어비스 블랙');

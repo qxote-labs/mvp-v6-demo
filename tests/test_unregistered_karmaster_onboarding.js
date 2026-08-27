@@ -62,7 +62,8 @@ const { chromium } = require('playwright');
     console.log('5) 로그인 화면에 신규 카마스터가 정식 등록되어 나타나는지(1이어야 정상):', newKarmasterVisible);
 
     await customer.waitForSelector('text=계약 내용 확인 →', { timeout: 3000 });
-    const contractText = await customer.locator('.msg-box').innerText();
+    // 차종 등은 이제 항상 보이는 "계약 내용" 요약 카드(.admin-controls, 페이지 맨 앞)에 있다.
+    const contractText = await customer.locator('.admin-controls').first().innerText();
     console.log('6) 고객 화면에 반영된 계약 내용:', contractText.replace(/\n/g, ' / '));
 
     const pass = noticeText.includes('아직 이 서비스에 등록되지 않은') && reviewText.includes('카니발 하이브리드') && newKarmasterVisible === 1 && contractText.includes('정도윤') && contractText.includes('카니발 하이브리드');

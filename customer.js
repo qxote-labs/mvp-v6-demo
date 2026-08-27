@@ -438,15 +438,13 @@ function renderDetail() {
       return box;
     },
 
+    // 계약 세부 내용(차종·계약번호 등)은 아래 renderDetail()이 단계와 무관하게 항상 보여주는
+    // "계약 내용" 요약 카드에서 확인할 수 있어, 여기서는 이 단계에서만 필요한 안내만 남긴다.
     contract_pending: () => el(`<div>
       <h2>카마스터가 승인한 계약 내용을 확인해 주세요</h2>
       <span class="badge wait">고객 확인 대기 · ${r.id}</span>
       ${renderPreReleaseStepperHTML(r)}
-      <div class="msg-box">${karmasterDisplayName(km)}님이 등록하신 계약 내용을 검토하고 아래와 같이 승인했습니다.<br>
-        제조사 계약번호: <b>${r.carBrand || '-'} · ${r.contractNumber || '미입력'}</b><br>
-        차량: <b>${r.carModel}</b>${r.trim ? ` · ${r.trim}` : ''}${r.color ? ` · ${r.color}` : ''}${r.contractDate ? `<br>계약일자: ${r.contractDate}` : ''}<br>
-        목적지 유형: <b>${destinationTypeLabel(r.destinationType)}</b>
-        ${r.consultMemo ? `<br>상담 메모: ${r.consultMemo}` : ''}</div>
+      <div class="msg-box">${karmasterDisplayName(km)}님이 등록하신 계약 내용을 검토하고 승인했습니다. 아래 "계약 내용"에서 확정된 세부 내용을 확인해 주세요.</div>
       <button class="btn btn-primary btn-auto" onclick="doConfirmContract()">계약 내용 확인 →</button>
     </div>`),
 
@@ -455,12 +453,6 @@ function renderDetail() {
         <h2>계약이 확정되었습니다</h2>
         <span class="badge done">계약 확정${hasCustomizing(r) ? ' · 출고 후 시공예정' : ' · 시공 없이 순수 차량 구매'}</span>
         ${renderPreReleaseStepperHTML(r)}
-        <div class="msg-box">
-          제조사 계약번호: <b>${r.carBrand || '-'} · ${r.contractNumber || '미입력'}</b><br>
-          차량: <b>${r.carModel}</b>${r.trim ? ` · ${r.trim}` : ''}${r.color ? ` · ${r.color}` : ''}${r.contractDate ? `<br>계약일자: ${r.contractDate}` : ''}<br>
-          목적지 유형: <b>${destinationTypeLabel(r.destinationType)}</b>
-          ${r.consultMemo ? `<br>상담 메모: ${r.consultMemo}` : ''}
-        </div>
       </div>`);
       box.appendChild(renderReleaseBox(r, '예: 자택 주소, 또는 직접 이용하실 정비·시공업체 주소'));
       return box;
@@ -514,7 +506,22 @@ function renderDetail() {
   };
 
   const phase = computePhase(r);
-  const wrap = el(`<div><div id="stepper-slot">${renderStatusStepperHTML(r)}</div><div id="phase-slot"></div></div>`);
+  // 계약 내용(차종·계약번호·계약일자·목적지·카마스터) 요약 — 예전엔 계약등록~계약확정 단계에서만
+  // (msg-box로) 보였고, 그 뒤(출고~완료) 화면들은 전부 배송 상태·작업 진행 얘기만 해서 애초에
+  // 무슨 계약이었는지 다시 확인할 방법이 없었다. 어느 단계에서 봐도 항상 위쪽에 그대로 남겨둔다.
+  const contractSummary = el(`<div class="admin-controls" style="margin-top:12px;">
+    <h4>계약 내용</h4>
+    <div class="summary-line"><span>제조사 계약번호</span><span>${r.carBrand || '-'} · ${r.contractNumber || '미입력'}</span></div>
+    <div class="summary-line"><span>차량</span><span>${r.carModel}${r.trim ? ` · ${r.trim}` : ''}${r.color ? ` · ${r.color}` : ''}</span></div>
+    ${r.contractDate ? `<div class="summary-line"><span>계약일자</span><span>${r.contractDate}</span></div>` : ''}
+    <div class="summary-line"><span>목적지 유형</span><span>${destinationTypeLabel(r.destinationType)}</span></div>
+    <div class="summary-line"><span>카마스터</span><span>${km ? karmasterDisplayName(km) : '미배정'}</span></div>
+    ${r.consultMemo ? `<div class="summary-line"><span>상담 메모</span><span>${r.consultMemo}</span></div>` : ''}
+  </div>`);
+  const wrap = el(`<div><div id="stepper-slot">${renderStatusStepperHTML(r)}</div></div>`);
+  wrap.appendChild(contractSummary);
+  const phaseSlotWrap = el(`<div id="phase-slot"></div>`);
+  wrap.appendChild(phaseSlotWrap);
   const slot = wrap.querySelector('#phase-slot');
   slot.appendChild((renderers[phase] || renderers['contract_pending'])());
   if (r.stage === 'CONFIRMED' && !r.karmasterRated && phase !== 'delivery_done') {
