@@ -535,7 +535,10 @@ function renderDetail() {
   // (msg-box로) 보였고, 그 뒤(출고~완료) 화면들은 전부 배송 상태·작업 진행 얘기만 해서 애초에
   // 무슨 계약이었는지 다시 확인할 방법이 없었다. 어느 단계에서 봐도 항상 접혔다 펴는 카드로 남겨둔다
   // — 항목이 늘어나도 화면을 계속 차지하지 않으면서, 펼치면 언제든 바로 확인할 수 있다.
-  const contractSummary = el(`<details class="admin-controls" style="margin-top:12px;">
+  // 원래는 stepper 바로 아래(phase 제목보다도 먼저)에 뒀는데, 접힌 상태에서는 stepper와 실제 화면
+  // 제목 사이에 낯선 토글 한 줄이 끼어드는 모양이 되어 어색했다. 케어서비스의 "신청 내용"과 같은
+  // 규칙으로 phase 내용 뒤, "전체 처리 이력" 바로 앞으로 옮긴다.
+  const contractSummary = el(`<details class="admin-controls" style="margin-top:24px;">
     <summary style="cursor:pointer;font-weight:800;font-size:13px;">계약 내용</summary>
     <div style="margin-top:10px;">
       <div class="summary-line"><span>제조사 계약번호</span><span>${r.carBrand || '-'} · ${r.contractNumber || '미입력'}</span></div>
@@ -547,7 +550,6 @@ function renderDetail() {
     </div>
   </details>`);
   const wrap = el(`<div><div id="stepper-slot">${renderStatusStepperHTML(r)}</div></div>`);
-  wrap.appendChild(contractSummary);
   const phaseSlotWrap = el(`<div id="phase-slot"></div>`);
   wrap.appendChild(phaseSlotWrap);
   const slot = wrap.querySelector('#phase-slot');
@@ -556,6 +558,7 @@ function renderDetail() {
     slot.appendChild(el(`<div class="msg-box" style="border-left:3px solid #185fa5;margin-top:16px;">아직 카마스터를 평가하지 않으셨습니다.
       <button class="btn btn-sm" style="margin-left:8px;" onclick="goRate('karmaster','${r.karmasterId}','${r.id}')">평가하고 포인트 받기</button></div>`));
   }
+  slot.appendChild(contractSummary);
   slot.appendChild(el(`<div class="admin-controls" style="margin-top:24px;"><h4>전체 처리 이력</h4>${renderHistoryLogHTML(r)}</div>`));
   slot.appendChild(renderMessagePanel(r, 'customer', km ? karmasterDisplayName(km) : '카마스터'));
   // 신차 케어 서비스 안내/연결 — 이전엔 release_prep 단계에만 있어서, 그 뒤(출고~완료)로 넘어가면
