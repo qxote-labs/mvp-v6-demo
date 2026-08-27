@@ -327,6 +327,34 @@ const DEFAULT_RESERVATIONS = [
       { t: Date.now() - 1 * 86400000, msg: '차량이 지정업체(울산오토라운지)에 도착했습니다 — 카마스터의 시공완료 확인 대기 (CUSTOMIZING)' },
     ],
   },
+  {
+    // 세 번째 데모 — DELIVERED(도착은 했지만 카마스터 개인수령확인·고객 최종인수승인 둘 다 아직)
+    // 상태를 곧바로 보여준다. transit이 없는 정적인 상태라 시드로 심어도 시간에 따라 저절로
+    // 바뀌지 않는다(IN_TRANSIT과 달리 만료 타이머가 없다).
+    id: '10-202601-9004',
+    createdAt: Date.now() - 4 * 86400000,
+    stage: 'DELIVERED',
+    confirmCode: '910004',
+    karmasterId: 'k1', pendingKarmasterPhone: '',
+    customer: { name: '박지훈', phone: '010-7777-3000', nickname: '' },
+    carModel: 'K5', carBrand: '기아', contractNumber: 'KIA-2026-4001', trim: '', color: '실버', contractDate: '2026-08-22',
+    destinationType: 'CUSTOM_ADDRESS', consultMemo: '', karmasterShopName: '',
+    ownerReleaseRequested: true, deliveryAddress: '울산광역시 남구 자택',
+    transit: null, transitStage: 'NONE',
+    isManagerConfirmed: false, isCustomerApproved: false,
+    deliveredAt: Date.now() - 3600000, inspectionResult: null, inspectionNote: '', customerPhotos: [], signature: null,
+    exceptionReason: '', exceptionPrevStage: null, exceptionPausedAt: null,
+    augmentation: _emptyAugmentation(),
+    karmasterRated: false, karmasterPointsEarned: 0,
+    messages: [{ from: 'customer', text: '계약 내용을 확인하고 승인해 주세요. (자동 안내)', t: Date.now() - 4 * 86400000 }],
+    karmasterUnread: false,
+    log: [
+      { t: Date.now() - 4 * 86400000, msg: '고객이 계약내역을 등록했습니다 — 카마스터 승인 대기' },
+      { t: Date.now() - 4 * 86400000, msg: '카마스터가 계약 내용을 검토하고 승인했습니다 — 차종: K5, 목적지 유형: 고객 지정 장소로 배송' },
+      { t: Date.now() - 3 * 86400000, msg: '고객이 계약 내용을 확인했습니다' },
+      { t: Date.now() - 3600000, msg: '도착 완료 — 울산광역시 남구 자택 (DELIVERED)' },
+    ],
+  },
 ];
 
 // 데모용 시드 신차 케어 서비스 주문 — 위 시드 예약 중 이미 인도 완료된 건(10-202601-9001)에 연결해,
@@ -670,8 +698,9 @@ const Store = {
   // 실제 예약이 새로 쌓여도 이 목록 자체는 흔들리지 않는, 다른 4개 역할과 같은 성격의 "빠른 로그인"이다.
   getDemoCustomers() {
     return [
-      { name: '김민준', phone: '010-7777-1000', note: '인도 완료 · 신차 케어 서비스 진행중' },
+      { name: '김민준', phone: '010-7777-1000', note: '신차인도서비스는 완료 · 신차 케어 서비스는 별도로 진행중' },
       { name: '이서연', phone: '010-7777-2000', note: '커스터마이징 진행중' },
+      { name: '박지훈', phone: '010-7777-3000', note: '차량 도착 · 인수 확인 대기중' },
     ];
   },
 

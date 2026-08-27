@@ -58,9 +58,9 @@ const { chromium } = require('playwright');
     await karmaster.waitForSelector('table tr.clickable', { timeout: 3000 });
     const rows = karmaster.locator('table tr.clickable');
     const countBefore = await rows.count();
-    // 시드 데이터(김민준, k1=김도현 카마스터 담당)가 항상 1건 깔려 있어, 이 테스트가 새로 등록한
+    // 시드 데이터(김민준·박지훈, 둘 다 k1=김도현 카마스터 담당)가 항상 2건 깔려 있어, 이 테스트가 새로 등록한
     // 고객A+고객B 2건을 더하면 3건이 정상이다.
-    console.log('3) 카마스터: 담당 고객 목록 건수 확인 (시드 1건 + 신규 2건 = 3건이어야 함):', countBefore);
+    console.log('3) 카마스터: 담당 고객 목록 건수 확인 (시드 2건[김민준·박지훈] + 신규 2건 = 4건이어야 함):', countBefore);
 
     // 카마스터: 고객A 행을 열어 내용 확인 후 승인
     await karmaster.locator('table tr.clickable', { hasText: '고객A' }).click();
@@ -102,7 +102,7 @@ const { chromium } = require('playwright');
     // 고객A는 계약을 확인했을 뿐 아직 "차량 출고 요청하기"를 누르지 않았으므로, 카마스터 목록에는
     // "출고 요청 가능"이 아니라 "고객 출고요청 대기"로 표시되어야 한다(계약 확정이 곧바로 출고
     // 요청 가능 상태로 이어지지 않는다).
-    const pass = countBefore === 3 && stillWaitingBadge.includes('고객요청')
+    const pass = countBefore === 4 && stillWaitingBadge.includes('고객요청')
       && reviewA.includes('쏘나타') && reviewB.includes('K5') && !reviewB.includes('쏘나타')
       && kmListText.includes('고객 확인 대기') && kmListText.includes('고객 출고요청 대기');
     if (!pass || errors.length) {
