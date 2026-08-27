@@ -1048,6 +1048,10 @@ function renderCareDetail() {
   const phase = computeCarePhase(c);
   // 신청 내용(대상 차량·시공업체·패키지·옵션·견적가) 요약 — 신차인도서비스 쪽과 같은 문제가 여기도
   // 있었다. 단계별 화면은 전부 진행 상태만 얘기해서, 애초에 뭘 신청했는지 확인할 방법이 없었다.
+  // 인도서비스 상세(계약 내용 카드)는 "전체 진행 stepper → 계약 내용 → 단계별 제목/내용" 순인데,
+  // 케어서비스엔 그 전체 stepper가 없어 이 카드가 화면 맨 위, 단계 제목보다도 먼저 뜨는 게 어색했다.
+  // "지금 상태/제목을 먼저 보여주고 그 아래 접힌 세부 카드를 둔다"는 순서를 맞추기 위해 phase
+  // 렌더러가 만든 제목/배지/본문 뒤, "전체 처리 이력" 앞에 붙인다.
   const careSummary = el(`<details class="admin-controls">
     <summary style="cursor:pointer;font-weight:800;font-size:13px;">신청 내용</summary>
     <div style="margin-top:10px;">
@@ -1061,11 +1065,11 @@ function renderCareDetail() {
     </div>
   </details>`);
   const wrap = el(`<div></div>`);
-  wrap.appendChild(careSummary);
   const phaseSlotWrap = el(`<div id="phase-slot"></div>`);
   wrap.appendChild(phaseSlotWrap);
   const slot = wrap.querySelector('#phase-slot');
   slot.appendChild((renderers[phase] || renderers['care_requested'])());
+  slot.appendChild(careSummary);
   slot.appendChild(el(`<div class="admin-controls" style="margin-top:24px;"><h4>전체 처리 이력</h4>${renderHistoryLogHTML(c)}</div>`));
   const back = el(`<div class="btn-row" style="margin-top:24px;justify-content:flex-start;">
     <button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('landing')">처음으로</button>
