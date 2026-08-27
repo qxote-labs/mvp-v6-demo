@@ -536,17 +536,19 @@ function renderDetail() {
   // 신차 케어 서비스 안내/연결 — 이전엔 release_prep 단계에만 있어서, 그 뒤(출고~완료)로 넘어가면
   // 이 차량에 이미 진행 중인 신차 케어 서비스가 있어도 이 화면 어디서도 확인할 수 없었다. 목록 자체는
   // 계속 분리해 두되(두 서비스는 진짜 독립이다), 이 계약 화면에서 그 존재만큼은 항상 알 수 있게 한다.
-  // 위치는 맨 아래 — 이 페이지의 나머지 전부(계약내용·스텝바·이력·메시지)는 이 카마스터와의 계약
-  // 얘기인데, 신차 케어 서비스는 그와 무관한 별개 계약이라 중간에 끼면 어색하다.
+  // "계약 내용"과 같은 접이식 카드로 둔다 — 안에 든 버튼이 바로 아래 "목록으로" 버튼과 나란히 붙어
+  // 무게가 부딪히던 문제를, 순서를 바꾸지 않고도 접어서 한 줄로 줄여 해결한다.
   const careOrders = Store.getCareOrdersByReservation(r.id);
-  const careBox = el(`<div class="admin-controls" style="margin-top:24px;">
-    <h4>신차 케어 서비스</h4>
-    ${careOrders.length === 0
-      ? `<div class="hint">이 차량에 별도로 시공·정비가 필요하시면, 신차 케어 서비스에서 신청할 수 있습니다 — 신차인도서비스와는 시간적으로 완전히 분리된 별개 서비스입니다.</div>
-         <button class="btn btn-outline btn-auto" style="margin-top:8px;" id="care-cross-open">신차 케어 서비스 신청하기 →</button>`
-      : careOrders.map(c => `<div class="summary-line"><span>${c.id}${c.package ? ` · ${c.package.name}` : ''}</span><span class="badge ${c.status === '출차완료' ? 'done' : 'wait'}">${c.status}</span></div>`).join('') +
-        `<button class="btn btn-outline btn-auto" style="margin-top:8px;" id="care-cross-view">신차 케어 서비스 확인하기 →</button>`}
-  </div>`);
+  const careBox = el(`<details class="admin-controls" style="margin-top:24px;">
+    <summary style="cursor:pointer;font-weight:800;font-size:13px;">신차 케어 서비스</summary>
+    <div style="margin-top:10px;">
+      ${careOrders.length === 0
+        ? `<div class="hint">이 차량에 별도로 시공·정비가 필요하시면, 신차 케어 서비스에서 신청할 수 있습니다 — 신차인도서비스와는 시간적으로 완전히 분리된 별개 서비스입니다.</div>
+           <button class="btn btn-outline btn-auto" style="margin-top:8px;" id="care-cross-open">신차 케어 서비스 신청하기 →</button>`
+        : careOrders.map(c => `<div class="summary-line"><span>${c.id}${c.package ? ` · ${c.package.name}` : ''}</span><span class="badge ${c.status === '출차완료' ? 'done' : 'wait'}">${c.status}</span></div>`).join('') +
+          `<button class="btn btn-outline btn-auto" style="margin-top:8px;" id="care-cross-view">신차 케어 서비스 확인하기 →</button>`}
+    </div>
+  </details>`);
   if (careOrders.length === 0) {
     careBox.querySelector('#care-cross-open').addEventListener('click', () => { careSetupReservationId = r.id; goto('care_setup'); });
   } else {
