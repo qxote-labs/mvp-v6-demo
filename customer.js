@@ -61,7 +61,9 @@ function _renderInner() {
     const c = Store.getCareOrder(careActiveId);
     if (c) headerText = `신차 케어 서비스 계약번호: ${c.id}`;
   }
-  document.getElementById('header-right').textContent = headerText;
+  const headerRight = document.getElementById('header-right');
+  headerRight.innerHTML = `${headerText ? `<span style="margin-right:12px;">${headerText}</span>` : ''}<button class="btn btn-outline btn-sm" style="width:auto;" id="customer-logout-btn">로그아웃</button>`;
+  headerRight.querySelector('#customer-logout-btn').addEventListener('click', logoutCustomer);
   root.appendChild((map[view] || renderLanding)());
   if (restore) {
     const restored = document.getElementById(restore.id);
@@ -128,6 +130,29 @@ function tryCustomerLogin() {
   sessionStorage.setItem('v6_customer_phone', phone);
   requestDraft.name = name;
   requestDraft.phone = phone;
+  render();
+}
+
+// 다른 4개 역할엔 다 있는 "로그아웃"이 구매자만 빠져 있어서, 세션스토리지를 직접 지우지 않는 한
+// 다른 데모 계정으로 바꿀 방법이 없었다 — 화면 우측 상단에 항상 노출되는 로그아웃 버튼을 추가한다.
+// 다음 로그인에 이전 세션의 흔적(어느 화면·어느 예약을 보고 있었는지 등)이 새지 않도록 내비게이션
+// 상태도 전부 초기화한다.
+function logoutCustomer() {
+  stopTransitTicker();
+  loggedInCustomer = false;
+  loggedInName = '';
+  loggedInPhone = '';
+  view = 'landing';
+  activeId = null;
+  careActiveId = null;
+  careSetupReservationId = null;
+  requestDraft = { karmasterPhone: '', carModel: '', carBrand: '', contractNumber: '', trim: '', color: '', contractDate: '', name: '', phone: '', nickname: '' };
+  sessionStorage.removeItem('v6_customer_logged');
+  sessionStorage.removeItem('v6_customer_name');
+  sessionStorage.removeItem('v6_customer_phone');
+  sessionStorage.removeItem('v6_view');
+  sessionStorage.removeItem('v6_active');
+  sessionStorage.removeItem('v6_care_active');
   render();
 }
 
@@ -501,7 +526,7 @@ function renderDetail() {
       ${r.karmasterRated
         ? `<span class="badge done">카마스터 평가 완료 · +${fmtPoint(r.karmasterPointsEarned)} 적립</span>`
         : `<button class="btn btn-primary btn-auto" onclick="goRate('karmaster','${r.karmasterId}','${r.id}')">카마스터 평가하고 포인트 받기</button>
-           <div class="hint" style="margin-top:8px;">평가는 나중에 "내 계약 확인" 이력에서도 남길 수 있습니다.</div>`}
+           <div class="hint" style="margin-top:8px;">평가는 나중에 "신차인도서비스" 목록에서도 남길 수 있습니다.</div>`}
     </div>`),
   };
 
@@ -555,7 +580,7 @@ function renderDetail() {
     careBox.querySelector('#care-cross-view').addEventListener('click', () => { careActiveId = careOrders[0].id; goto('care_detail'); });
   }
   slot.appendChild(careBox);
-  const back = el(`<div style="margin-top:24px;"><button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('history')">내 계약 확인으로</button></div>`);
+  const back = el(`<div style="margin-top:24px;"><button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('history')">신차인도서비스 목록으로</button></div>`);
   wrap.appendChild(back);
   return wrap;
 }

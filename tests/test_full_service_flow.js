@@ -181,8 +181,8 @@ const { chromium } = require('playwright');
 
     // 9) 고객: 신차 케어 서비스 진행상황은 신차인도서비스 화면에 자동으로 뜨지 않는다 — 다시 그
     // 서비스로 직접 이동해야 검수 화면을 볼 수 있다(완전히 독립된 서비스임을 다시 한번 보여주는 지점).
-    await customer.waitForSelector('text=내 계약 확인으로', { timeout: 3000 });
-    await customer.click('text=내 계약 확인으로');
+    await customer.waitForSelector('text=신차인도서비스 목록으로', { timeout: 3000 });
+    await customer.click('text=신차인도서비스 목록으로');
     await customer.waitForSelector('text=← 처음으로', { timeout: 3000 });
     await customer.click('text=← 처음으로');
     await customer.waitForSelector('button:has-text("신차 케어 서비스")', { timeout: 3000 });
