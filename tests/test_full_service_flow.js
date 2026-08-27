@@ -60,8 +60,8 @@ const { chromium } = require('playwright');
     // 2) 고객: 애프터마켓(신차 케어 서비스) 신청 — 신차인도서비스와 완전히 독립된 별개 서비스이므로,
     // 계약확정 화면에서는 그 서비스로 "이동"만 하고(내 차량이 1대뿐이라 차량선택은 자동으로 건너뜀),
     // 실제 신청은 별도 화면(신차 케어 서비스 신청)에서 이뤄진다.
-    await customer.waitForSelector('#care-open', { timeout: 3000 });
-    await customer.click('#care-open');
+    await customer.waitForSelector('#care-cross-open', { timeout: 3000 });
+    await customer.click('#care-cross-open');
     await customer.waitForSelector('.shop-grid', { timeout: 3000 });
     await customer.click('.shop-card >> nth=1');
     await customer.click('#opt-door_ppf');

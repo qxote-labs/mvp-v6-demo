@@ -421,12 +421,6 @@ function renderDetail() {
         </div>
       </div>`);
       box.appendChild(renderReleaseBox(r, '예: 자택 주소, 또는 직접 이용하실 정비·시공업체 주소'));
-      const careLink = el(`<div style="margin-top:18px;">
-        <div class="hint">별도로 시공·정비가 필요하시면, 신차 케어 서비스에서 이 차량을 골라 신청할 수 있습니다 — 출고 후 시공예정 여부와는 무관한 별개 서비스입니다.</div>
-        <button class="btn btn-outline btn-auto" style="margin-top:6px;" id="care-open">신차 케어 서비스로 이동</button>
-      </div>`);
-      careLink.querySelector('#care-open').addEventListener('click', () => { careSetupReservationId = r.id; goto('care_setup'); });
-      box.appendChild(careLink);
       return box;
     },
 
@@ -485,6 +479,24 @@ function renderDetail() {
     slot.appendChild(el(`<div class="msg-box" style="border-left:3px solid #185fa5;margin-top:16px;">아직 카마스터를 평가하지 않으셨습니다.
       <button class="btn btn-sm" style="margin-left:8px;" onclick="goRate('karmaster','${r.karmasterId}','${r.id}')">평가하고 포인트 받기</button></div>`));
   }
+  // 신차 케어 서비스 안내/연결 — 이전엔 release_prep 단계에만 있어서, 그 뒤(출고~완료)로 넘어가면
+  // 이 차량에 이미 진행 중인 신차 케어 서비스가 있어도 이 화면 어디서도 확인할 수 없었다. 목록 자체는
+  // 계속 분리해 두되(두 서비스는 진짜 독립이다), 이 계약 화면에서 그 존재만큼은 항상 알 수 있게 한다.
+  const careOrders = Store.getCareOrdersByReservation(r.id);
+  const careBox = el(`<div class="admin-controls" style="margin-top:16px;">
+    <h4>신차 케어 서비스</h4>
+    ${careOrders.length === 0
+      ? `<div class="hint">이 차량에 별도로 시공·정비가 필요하시면, 신차 케어 서비스에서 신청할 수 있습니다 — 신차인도서비스와는 시간적으로 완전히 분리된 별개 서비스입니다.</div>
+         <button class="btn btn-outline btn-auto" style="margin-top:8px;" id="care-cross-open">신차 케어 서비스 신청하기 →</button>`
+      : careOrders.map(c => `<div class="summary-line"><span>${c.id}${c.package ? ` · ${c.package.name}` : ''}</span><span class="badge ${c.status === '출차완료' ? 'done' : 'wait'}">${c.status}</span></div>`).join('') +
+        `<button class="btn btn-outline btn-auto" style="margin-top:8px;" id="care-cross-view">신차 케어 서비스 확인하기 →</button>`}
+  </div>`);
+  if (careOrders.length === 0) {
+    careBox.querySelector('#care-cross-open').addEventListener('click', () => { careSetupReservationId = r.id; goto('care_setup'); });
+  } else {
+    careBox.querySelector('#care-cross-view').addEventListener('click', () => { careActiveId = careOrders[0].id; goto('care_detail'); });
+  }
+  slot.appendChild(careBox);
   slot.appendChild(el(`<div class="admin-controls" style="margin-top:24px;"><h4>전체 처리 이력</h4>${renderHistoryLogHTML(r)}</div>`));
   slot.appendChild(renderMessagePanel(r, 'customer', km ? karmasterDisplayName(km) : '카마스터'));
   const back = el(`<div style="margin-top:24px;"><button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('history')">내 계약 확인으로</button></div>`);
