@@ -508,16 +508,19 @@ function renderDetail() {
   const phase = computePhase(r);
   // 계약 내용(차종·계약번호·계약일자·목적지·카마스터) 요약 — 예전엔 계약등록~계약확정 단계에서만
   // (msg-box로) 보였고, 그 뒤(출고~완료) 화면들은 전부 배송 상태·작업 진행 얘기만 해서 애초에
-  // 무슨 계약이었는지 다시 확인할 방법이 없었다. 어느 단계에서 봐도 항상 위쪽에 그대로 남겨둔다.
-  const contractSummary = el(`<div class="admin-controls" style="margin-top:12px;">
-    <h4>계약 내용</h4>
-    <div class="summary-line"><span>제조사 계약번호</span><span>${r.carBrand || '-'} · ${r.contractNumber || '미입력'}</span></div>
-    <div class="summary-line"><span>차량</span><span>${r.carModel}${r.trim ? ` · ${r.trim}` : ''}${r.color ? ` · ${r.color}` : ''}</span></div>
-    ${r.contractDate ? `<div class="summary-line"><span>계약일자</span><span>${r.contractDate}</span></div>` : ''}
-    <div class="summary-line"><span>목적지 유형</span><span>${destinationTypeLabel(r.destinationType)}</span></div>
-    <div class="summary-line"><span>카마스터</span><span>${km ? karmasterDisplayName(km) : '미배정'}</span></div>
-    ${r.consultMemo ? `<div class="summary-line"><span>상담 메모</span><span>${r.consultMemo}</span></div>` : ''}
-  </div>`);
+  // 무슨 계약이었는지 다시 확인할 방법이 없었다. 어느 단계에서 봐도 항상 접혔다 펴는 카드로 남겨둔다
+  // — 항목이 늘어나도 화면을 계속 차지하지 않으면서, 펼치면 언제든 바로 확인할 수 있다.
+  const contractSummary = el(`<details class="admin-controls" style="margin-top:12px;">
+    <summary style="cursor:pointer;font-weight:800;font-size:13px;">계약 내용</summary>
+    <div style="margin-top:10px;">
+      <div class="summary-line"><span>제조사 계약번호</span><span>${r.carBrand || '-'} · ${r.contractNumber || '미입력'}</span></div>
+      <div class="summary-line"><span>차량</span><span>${r.carModel}${r.trim ? ` · ${r.trim}` : ''}${r.color ? ` · ${r.color}` : ''}</span></div>
+      ${r.contractDate ? `<div class="summary-line"><span>계약일자</span><span>${r.contractDate}</span></div>` : ''}
+      <div class="summary-line"><span>목적지 유형</span><span>${destinationTypeLabel(r.destinationType)}</span></div>
+      <div class="summary-line"><span>카마스터</span><span>${km ? karmasterDisplayName(km) : '미배정'}</span></div>
+      ${r.consultMemo ? `<div class="summary-line"><span>상담 메모</span><span>${r.consultMemo}</span></div>` : ''}
+    </div>
+  </details>`);
   const wrap = el(`<div><div id="stepper-slot">${renderStatusStepperHTML(r)}</div></div>`);
   wrap.appendChild(contractSummary);
   const phaseSlotWrap = el(`<div id="phase-slot"></div>`);
@@ -528,11 +531,15 @@ function renderDetail() {
     slot.appendChild(el(`<div class="msg-box" style="border-left:3px solid #185fa5;margin-top:16px;">아직 카마스터를 평가하지 않으셨습니다.
       <button class="btn btn-sm" style="margin-left:8px;" onclick="goRate('karmaster','${r.karmasterId}','${r.id}')">평가하고 포인트 받기</button></div>`));
   }
+  slot.appendChild(el(`<div class="admin-controls" style="margin-top:24px;"><h4>전체 처리 이력</h4>${renderHistoryLogHTML(r)}</div>`));
+  slot.appendChild(renderMessagePanel(r, 'customer', km ? karmasterDisplayName(km) : '카마스터'));
   // 신차 케어 서비스 안내/연결 — 이전엔 release_prep 단계에만 있어서, 그 뒤(출고~완료)로 넘어가면
   // 이 차량에 이미 진행 중인 신차 케어 서비스가 있어도 이 화면 어디서도 확인할 수 없었다. 목록 자체는
   // 계속 분리해 두되(두 서비스는 진짜 독립이다), 이 계약 화면에서 그 존재만큼은 항상 알 수 있게 한다.
+  // 위치는 맨 아래 — 이 페이지의 나머지 전부(계약내용·스텝바·이력·메시지)는 이 카마스터와의 계약
+  // 얘기인데, 신차 케어 서비스는 그와 무관한 별개 계약이라 중간에 끼면 어색하다.
   const careOrders = Store.getCareOrdersByReservation(r.id);
-  const careBox = el(`<div class="admin-controls" style="margin-top:16px;">
+  const careBox = el(`<div class="admin-controls" style="margin-top:24px;">
     <h4>신차 케어 서비스</h4>
     ${careOrders.length === 0
       ? `<div class="hint">이 차량에 별도로 시공·정비가 필요하시면, 신차 케어 서비스에서 신청할 수 있습니다 — 신차인도서비스와는 시간적으로 완전히 분리된 별개 서비스입니다.</div>
@@ -546,8 +553,6 @@ function renderDetail() {
     careBox.querySelector('#care-cross-view').addEventListener('click', () => { careActiveId = careOrders[0].id; goto('care_detail'); });
   }
   slot.appendChild(careBox);
-  slot.appendChild(el(`<div class="admin-controls" style="margin-top:24px;"><h4>전체 처리 이력</h4>${renderHistoryLogHTML(r)}</div>`));
-  slot.appendChild(renderMessagePanel(r, 'customer', km ? karmasterDisplayName(km) : '카마스터'));
   const back = el(`<div style="margin-top:24px;"><button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('history')">내 계약 확인으로</button></div>`);
   wrap.appendChild(back);
   return wrap;
@@ -1011,7 +1016,24 @@ function renderCareDetail() {
   };
 
   const phase = computeCarePhase(c);
-  const wrap = el(`<div><div id="phase-slot"></div></div>`);
+  // 신청 내용(대상 차량·시공업체·패키지·옵션·견적가) 요약 — 신차인도서비스 쪽과 같은 문제가 여기도
+  // 있었다. 단계별 화면은 전부 진행 상태만 얘기해서, 애초에 뭘 신청했는지 확인할 방법이 없었다.
+  const careSummary = el(`<details class="admin-controls">
+    <summary style="cursor:pointer;font-weight:800;font-size:13px;">신청 내용</summary>
+    <div style="margin-top:10px;">
+      <div class="summary-line"><span>계약번호</span><span>${c.id}</span></div>
+      <div class="summary-line"><span>대상 차량</span><span>${c.carModel || '-'}${c.trim ? ` · ${c.trim}` : ''}${c.color ? ` · ${c.color}` : ''}</span></div>
+      <div class="summary-line"><span>시공업체</span><span>${shop ? shop.name : '-'}</span></div>
+      ${c.package ? `<div class="summary-line"><span>패키지</span><span>${c.package.name} · ${fmtMoney(c.package.price)}</span></div>` : ''}
+      ${(c.options || []).length > 0 ? `<div class="summary-line"><span>추가 옵션</span><span>${c.options.map(o => o.name).join(', ')}</span></div>` : ''}
+      ${c.quotedPrice ? `<div class="summary-line"><span>견적가</span><span>${fmtMoney(c.quotedPrice)}</span></div>` : ''}
+      ${c.customRequest ? `<div class="summary-line"><span>요청사항</span><span>${c.customRequest}</span></div>` : ''}
+    </div>
+  </details>`);
+  const wrap = el(`<div></div>`);
+  wrap.appendChild(careSummary);
+  const phaseSlotWrap = el(`<div id="phase-slot"></div>`);
+  wrap.appendChild(phaseSlotWrap);
   const slot = wrap.querySelector('#phase-slot');
   slot.appendChild((renderers[phase] || renderers['care_requested'])());
   slot.appendChild(el(`<div class="admin-controls" style="margin-top:24px;"><h4>전체 처리 이력</h4>${renderHistoryLogHTML(c)}</div>`));

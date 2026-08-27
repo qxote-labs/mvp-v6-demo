@@ -62,7 +62,8 @@ const { chromium } = require('playwright');
     console.log('5) 로그인 화면에 신규 카마스터가 정식 등록되어 나타나는지(1이어야 정상):', newKarmasterVisible);
 
     await customer.waitForSelector('text=계약 내용 확인 →', { timeout: 3000 });
-    // 차종 등은 이제 항상 보이는 "계약 내용" 요약 카드(.admin-controls, 페이지 맨 앞)에 있다.
+    // 차종 등은 이제 접혔다 펴는 "계약 내용" 카드 안에 있어, 먼저 펼쳐야 innerText로 읽힌다.
+    await customer.locator('summary:has-text("계약 내용")').first().click();
     const contractText = await customer.locator('.admin-controls').first().innerText();
     console.log('6) 고객 화면에 반영된 계약 내용:', contractText.replace(/\n/g, ' / '));
 

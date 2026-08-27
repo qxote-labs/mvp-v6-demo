@@ -50,7 +50,9 @@ const { chromium } = require('playwright');
     console.log('3) 카마스터: 차량정보 검토 후 승인, 상담 메모 기록');
 
     await customer.waitForSelector('text=계약 내용 확인 →', { timeout: 3000 });
-    // 차종·상담메모는 이제 항상 보이는 "계약 내용" 요약 카드(.admin-controls, 페이지 맨 앞)에 있다.
+    // 차종·상담메모는 이제 접혔다 펴는 "계약 내용" 카드(.admin-controls, 페이지 맨 앞) 안에 있어,
+    // innerText로 읽으려면 먼저 펼쳐야 한다(collapsed <details> 내용은 innerText에 안 잡힌다).
+    await customer.locator('summary:has-text("계약 내용")').first().click();
     const contractText = await customer.locator('.admin-controls').first().innerText();
     console.log('4) 고객 화면에 표시된 계약 내용:\n' + contractText);
 
