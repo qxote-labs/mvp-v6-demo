@@ -82,7 +82,7 @@ function renderLoginMock() {
     <input id="login-name" type="text" placeholder="이름 (홍길동)" value="${loggedInName}" style="margin-bottom:10px;" autocomplete="off">
     <input id="login-phone" type="tel" placeholder="010-1234-5678" value="${loggedInPhone}" style="margin-bottom:10px;" autocomplete="off">
     <input type="password" placeholder="비밀번호 (추후 지원 예정)" disabled style="margin-bottom:14px;">
-    <button class="btn btn-primary" style="width:100%;" onclick="tryCustomerLogin()">간편 로그인</button>
+    <button class="btn btn-primary" style="width:100%;" id="login-submit" disabled>로그인</button>
     <div style="margin-top:28px;padding-top:16px;border-top:1px solid #ddd;text-align:left;">
       <label style="font-size:11.5px;color:#888;">데모 계정으로 빠른 로그인 (비밀번호 불필요)</label>
       <select id="quick-login-customer" style="margin-top:6px;">
@@ -92,11 +92,21 @@ function renderLoginMock() {
       <div class="hint" style="margin-top:4px;">이미 계약 이력이 있는 기가입 고객으로, 매 단계를 처음부터 밟지 않고도 바로 이어지는 화면을 확인할 수 있습니다. 신규 가입 테스트는 위 입력창에 새 이름·연락처를 직접 적으면 됩니다.</div>
     </div>
   </div>`);
+  const nameEl = wrap.querySelector('#login-name'), phoneEl = wrap.querySelector('#login-phone'), submitBtn = wrap.querySelector('#login-submit');
+  // 이름·연락처가 빈 채로도 "로그인"이 눌려 신원 없는 상태로 넘어가던 걸 막는다 — 데모 계정
+  // 드롭다운이 이미 "빈 값 없이 곧바로 들어가는" 지름길을 담당하므로, 직접 입력 경로는 실제로 값이
+  // 채워졌을 때만 눌리게 한다.
+  function validateLogin() { submitBtn.disabled = !(nameEl.value.trim().length >= 2 && /^010-?\d{3,4}-?\d{4}$/.test(phoneEl.value)); }
+  nameEl.addEventListener('input', validateLogin);
+  phoneEl.addEventListener('input', () => { phoneEl.value = formatPhoneDigits(phoneEl.value); validateLogin(); });
+  validateLogin();
+  submitBtn.addEventListener('click', tryCustomerLogin);
   wrap.querySelector('#quick-login-customer').addEventListener('change', (e) => {
     const opt = e.target.selectedOptions[0];
     if (!opt || !opt.value) return;
-    document.getElementById('login-name').value = opt.dataset.name;
-    document.getElementById('login-phone').value = opt.value;
+    nameEl.value = opt.dataset.name;
+    phoneEl.value = opt.value;
+    validateLogin();
     tryCustomerLogin();
   });
   return wrap;
@@ -110,14 +120,15 @@ function formatPhoneDigits(raw) {
 function tryCustomerLogin() {
   const name = (document.getElementById('login-name').value || '').trim();
   const phone = formatPhoneDigits(document.getElementById('login-phone').value);
+  if (name.length < 2 || !/^010-?\d{3,4}-?\d{4}$/.test(phone)) return; // 버튼이 비활성 상태에서도 직접 호출될 일(데모 드롭다운)이 있어 한 번 더 막아둔다
   loggedInCustomer = true;
   loggedInName = name;
   loggedInPhone = phone;
   sessionStorage.setItem('v6_customer_logged', '1');
   sessionStorage.setItem('v6_customer_name', name);
   sessionStorage.setItem('v6_customer_phone', phone);
-  if (name) requestDraft.name = name;
-  if (phone) requestDraft.phone = phone;
+  requestDraft.name = name;
+  requestDraft.phone = phone;
   render();
 }
 

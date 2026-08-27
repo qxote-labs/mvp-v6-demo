@@ -17,8 +17,9 @@ const { chromium } = require('playwright');
 
     // 0) 고객: 로그인 후 이미 체결한 계약 내용(차량정보+카마스터 연락처)을 직접 입력해 계약내역 등록
     await customer.goto('http://localhost:8000/customer.html');
+    await customer.fill('#login-name', '홍길동');
     await customer.fill('#login-phone', '01011112222'); // "내 차량"(신차 케어 서비스 진입)이 이 로그인 번호로 조회된다
-    await customer.click('text=간편 로그인');
+    await customer.click('#login-submit');
     await customer.click('text=계약내역 등록하기');
     await customer.waitForSelector('#rq-km-phone', { timeout: 3000 });
     await customer.fill('#rq-km-phone', '01022223301'); // 김도현 카마스터 연락처 (등록됨)

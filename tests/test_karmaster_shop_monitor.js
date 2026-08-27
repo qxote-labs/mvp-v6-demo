@@ -16,7 +16,9 @@ const { chromium } = require('playwright');
     const driver = await context.newPage(); track(driver, 'driver');
 
     await customer.goto('http://localhost:8000/customer.html');
-    await customer.click('text=간편 로그인');
+    await customer.fill('#login-name', '모니터고객');
+    await customer.fill('#login-phone', '01099998888');
+    await customer.click('#login-submit');
     await customer.click('text=계약내역 등록하기');
     await customer.waitForSelector('#rq-km-phone', { timeout: 3000 });
     await customer.fill('#rq-km-phone', '01022223301'); // 김도현 카마스터 연락처

@@ -7,9 +7,15 @@ const { chromium } = require('playwright');
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
 
   await page.goto('http://localhost:8000/customer.html');
-  await page.click('text=간편 로그인');
+  await page.fill('#login-name', '입력테스트');
+  await page.fill('#login-phone', '01000000001');
+  await page.click('#login-submit');
   await page.click('text=계약내역 등록하기');
   await page.waitForSelector('#rq-name');
+  // 로그인 시점에 채운 이름이 계약내역 등록 폼의 이름 필드에도 그대로 넘어와 있으므로(자동 채움),
+  // 타이핑 검증을 위해 먼저 비워둔다 — 이 테스트가 보려는 건 "빈 칸에서 타이핑"이 아니라 "폴링 재렌더
+  // 중에도 입력이 안 끊기는지"이므로 상관없다.
+  await page.fill('#rq-name', '');
 
   // 입력 필드 DOM 노드에 마커를 심어, 폴링에 의한 재렌더링으로 노드가 통째로 교체되는지 확인한다.
   await page.evaluate(() => { document.querySelector('#rq-name').__markedNode = true; });

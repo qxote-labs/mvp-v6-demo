@@ -17,7 +17,9 @@ const { chromium } = require('playwright');
 
     // 고객 A: 계약내역 등록
     await customerA.goto('http://localhost:8000/customer.html');
-    await customerA.click('text=간편 로그인');
+    await customerA.fill('#login-name', '고객A');
+    await customerA.fill('#login-phone', '01011110000');
+    await customerA.click('#login-submit');
     await customerA.click('text=계약내역 등록하기');
     await customerA.waitForSelector('#rq-km-phone', { timeout: 3000 });
     await customerA.fill('#rq-km-phone', '01022223301'); // 김도현 카마스터 연락처
@@ -34,7 +36,9 @@ const { chromium } = require('playwright');
 
     // 고객 B: 같은 카마스터에게 계약내역 등록 (다른 차종)
     await customerB.goto('http://localhost:8000/customer.html');
-    await customerB.click('text=간편 로그인');
+    await customerB.fill('#login-name', '고객B');
+    await customerB.fill('#login-phone', '01022220000');
+    await customerB.click('#login-submit');
     await customerB.click('text=계약내역 등록하기');
     await customerB.waitForSelector('#rq-km-phone', { timeout: 3000 });
     await customerB.fill('#rq-km-phone', '01022223301'); // 김도현 카마스터 연락처
