@@ -10,7 +10,6 @@ let loggedInPhone = sessionStorage.getItem('v6_customer_phone') || '';
 let view = sessionStorage.getItem('v6_view') || 'landing';
 let activeId = sessionStorage.getItem('v6_active') || null;
 let careActiveId = sessionStorage.getItem('v6_care_active') || null;
-let historyPhone = sessionStorage.getItem('v6_history_phone') || '';
 let kmSortDim = 'overall';
 
 // 로그인한 계정 정보(이름/연락처)를 계약내역 등록 폼의 "내 이름/내 연락처" 기본값으로 쓴다 — 이미
@@ -1077,41 +1076,29 @@ function renderRating() {
 }
 
 // ===================== 내 계약 확인 / 이력 (신차인도서비스) =====================
-// 이 화면은 이미 로그인(loggedInCustomer)해야만 들어올 수 있으므로 loggedInPhone은 항상 채워져
-// 있다 — "누구 연락처로 조회할지" 매번 다시 물을 이유가 없다. 기본은 본인 연락처로 곧장 목록을
-// 보여주고, 가족 등 다른 번호를 대신 확인해야 하는 드문 경우에만 "다른 연락처로 조회하기"를 눌러
-// 검색창을 펼친다.
-let historyShowAltSearch = false;
+// 이 화면은 이미 로그인(loggedInCustomer)해야만 들어올 수 있어 loggedInPhone이 항상 있다 — 그래서
+// 로그인 연락처로 곧장 본인 계약만 보여준다. 예전엔 "다른 연락처로 조회하기"로 남의 번호도 찾아볼 수
+// 있었는데, 이 앱엔 "누가 그 계약을 등록했는지"를 확인할 방법이 없다(customer.phone 자체가 그 계약의
+// 유일한 신원 확인 수단이라, 등록자와 임의의 제3자를 구분 못 한다) — 그래서 아무 번호나 입력하면 나와
+// 무관한 사람의 이름·차종·배송지가 그대로 노출되는 개인정보 문제가 있어 뺐다. 가족 등 대리조회가 정말
+// 필요해지면, 그건 당사자 본인의 확인(컨펌) 절차를 먼저 갖춘 뒤에 다시 붙여야 한다.
 function renderHistory() {
-  if (!historyShowAltSearch) historyPhone = loggedInPhone;
+  const list = Store.getReservationsByPhone(loggedInPhone);
   const wrap = el(`<div>
     <h2>내 계약 확인 / 이력 조회</h2>
-    <div class="sub" style="margin-bottom:10px;">로그인하신 연락처(${loggedInPhone})로 등록된 계약입니다.
-      <a href="javascript:void(0)" id="hist-alt-toggle" style="margin-left:6px;">${historyShowAltSearch ? '내 연락처로 보기' : '다른 연락처로 조회하기'}</a>
-    </div>
-    <div id="hist-search-row" style="display:${historyShowAltSearch ? 'flex' : 'none'};gap:10px;max-width:420px;margin-bottom:14px;">
-      <input id="hist-phone" type="tel" placeholder="010-1234-5678" value="${historyPhone}" autocomplete="off">
-      <button class="btn btn-primary btn-auto" id="hist-search">조회</button>
-    </div>
-    <div id="hist-filter-row" style="display:none;max-width:420px;margin-bottom:24px;">
+    <div class="sub" style="margin-bottom:14px;">로그인하신 연락처(${loggedInPhone})로 등록된 계약입니다.</div>
+    <div id="hist-filter-row" style="display:${list.length > 1 ? 'flex' : 'none'};max-width:420px;margin-bottom:24px;">
       <input id="hist-filter" type="text" placeholder="접수번호·제조사 계약번호·카마스터 이름·차종으로 좁혀보기" autocomplete="off">
     </div>
     <div id="hist-results"></div>
   </div>`);
-  wrap.querySelector('#hist-alt-toggle').addEventListener('click', () => {
-    historyShowAltSearch = !historyShowAltSearch;
-    historyPhone = historyShowAltSearch ? '' : loggedInPhone;
-    render();
-  });
-  const input = wrap.querySelector('#hist-phone'), btn = wrap.querySelector('#hist-search'), resultsBox = wrap.querySelector('#hist-results');
-  const filterRow = wrap.querySelector('#hist-filter-row'), filterInput = wrap.querySelector('#hist-filter');
-  let currentList = [];
+  const resultsBox = wrap.querySelector('#hist-results'), filterInput = wrap.querySelector('#hist-filter');
 
   // 필터 입력은 이 안에서만 결과 테이블을 다시 그린다(전체 화면 render()를 타지 않음) — 그래야
   // 검색 중에 필터 입력창 자신이 포커스를 잃지 않는다.
   function renderTable() {
     const q = filterInput.value.trim().toLowerCase();
-    const filtered = !q ? currentList : currentList.filter(r => {
+    const filtered = !q ? list : list.filter(r => {
       const km = Store.getKarmaster(r.karmasterId);
       return r.id.toLowerCase().includes(q) || (r.contractNumber || '').toLowerCase().includes(q) || (r.carModel || '').toLowerCase().includes(q) || (km && karmasterDisplayName(km).toLowerCase().includes(q));
     });
@@ -1131,30 +1118,15 @@ function renderHistory() {
     });
     resultsBox.appendChild(table);
   }
-  function doSearch() {
-    historyPhone = input.value;
-    sessionStorage.setItem('v6_history_phone', historyPhone);
-    currentList = Store.getReservationsByPhone(historyPhone);
-    resultsBox.innerHTML = '';
-    if (!historyPhone) { filterRow.style.display = 'none'; return; }
-    if (currentList.length === 0) {
-      filterRow.style.display = 'none';
-      const empty = historyShowAltSearch
-        ? el(`<div class="empty-state"><div class="big">📭</div>해당 번호로 등록된 계약이 없습니다.</div>`)
-        : el(`<div class="empty-state"><div class="big">📭</div>아직 등록된 계약이 없습니다.<br><button class="btn btn-primary" style="width:auto;margin-top:14px;padding:10px 20px;" id="hist-empty-register">계약내역 등록하기</button></div>`);
-      resultsBox.appendChild(empty);
-      const registerBtn = empty.querySelector('#hist-empty-register');
-      if (registerBtn) registerBtn.addEventListener('click', () => goto('request'));
-      return;
-    }
-    // 계약이 여러 건일 때만 검색창을 보여준다 — 한 건뿐이면 굳이 필요 없다.
-    filterRow.style.display = currentList.length > 1 ? 'flex' : 'none';
+
+  if (list.length === 0) {
+    const empty = el(`<div class="empty-state"><div class="big">📭</div>아직 등록된 계약이 없습니다.<br><button class="btn btn-primary" style="width:auto;margin-top:14px;padding:10px 20px;" id="hist-empty-register">계약내역 등록하기</button></div>`);
+    resultsBox.appendChild(empty);
+    empty.querySelector('#hist-empty-register').addEventListener('click', () => goto('request'));
+  } else {
+    filterInput.addEventListener('input', renderTable);
     renderTable();
   }
-  filterInput.addEventListener('input', renderTable);
-  btn.addEventListener('click', doSearch);
-  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
-  if (historyPhone) doSearch();
   const backBtn = el(`<div style="margin-top:20px;"><button class="btn btn-outline" style="width:auto;padding:10px 18px;" onclick="goto('landing')">← 처음으로</button></div>`);
   wrap.appendChild(backBtn);
   return wrap;
